@@ -1,0 +1,7 @@
+{
+  "name": "3dtransmissiontools-store",
+  "private": true,
+  "dependencies": {
+    "stripe": "^16.0.0"
+  }
+}
