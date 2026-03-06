@@ -1,1 +1,34 @@
-
+[
+  {
+    "id": "tool-1",
+    "name": "6L80 / 6L90 Solenoid Tool",
+    "price": 49.95,
+    "quantity": 10,
+    "currency": "USD",
+    "image": ""
+  },
+  {
+    "id": "tool-2",
+    "name": "Valve Body Service Tool",
+    "price": 39.95,
+    "quantity": 10,
+    "currency": "USD",
+    "image": ""
+  },
+  {
+    "id": "tool-3",
+    "name": "Transmission Solenoid Tester",
+    "price": 59.95,
+    "quantity": 5,
+    "currency": "USD",
+    "image": ""
+  },
+  {
+    "id": "tool-4",
+    "name": "Shift Correction Tool",
+    "price": 29.95,
+    "quantity": 8,
+    "currency": "USD",
+    "image": ""
+  }
+]
