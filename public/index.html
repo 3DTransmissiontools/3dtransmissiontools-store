@@ -115,9 +115,11 @@
     <h3>Featured Product Categories</h3>
     <div class="grid">
       <div class="card">
-        <h4>6L80 / 6L90 Tools</h4>
-        <p>Specialized tools for common 6L80 and 6L90 transmission service and repair procedures.</p>
-      </div>
+  <h4>6L80 / 6L90 Solenoid Tool</h4>
+  <p>Precision tool for servicing 6L80 / 6L90 transmission solenoids.</p>
+  <p><strong>$49.95</strong></p>
+  <button onclick="buy()">Buy Now</button>
+</div>
       <div class="card">
         <h4>Valve Body Tools</h4>
         <p>Helpful tools for valve body disassembly, inspection, and reassembly work.</p>
@@ -150,5 +152,15 @@
   <footer>
     © 2026 3D Transmission Tools. All rights reserved.
   </footer>
+<script>
+async function buy() {
+  const res = await fetch("/api/create-checkout-session", {
+    method: "POST",
+  });
+
+  const data = await res.json();
+  window.location = data.url;
+}
+</script>
 </body>
 </html>
