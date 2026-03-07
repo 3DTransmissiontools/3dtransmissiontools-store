@@ -27,7 +27,10 @@
 "currency":"USD",
 "category":"GM / Allison",
 "description":"Harness removal tool set for several GM and Allison transmissions.",
-"image":""
+"images": [
+  "https://i.ebayimg.com/images/g/hJ0AAOSwnDxoH81j/s-l1600.webp",
+  "https://i.ebayimg.com/images/g/txUAAOSwByJoH81r/s-l1600.webp"
+]
 },
 {
 "id":"4",
