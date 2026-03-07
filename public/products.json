@@ -1,34 +1,46 @@
 [
   {
-    "id": "tool-1",
-    "name": "6L80 / 6L90 Solenoid Tool",
-    "price": 49.95,
-    "quantity": 10,
+    "id": "6l80-90-input-shaft-tool",
+    "name": "6L80/90 Automatic Transmission Input Shaft Teflon Ring Installation Tools",
+    "description": "Installation tool set for 6L80/90 input shaft Teflon rings.",
+    "price": 12.0,
+    "quantity": 2,
     "currency": "USD",
-    "image": ""
+    "image": "",
+    "category": "GM Transmissions",
+    "featured": true
   },
   {
-    "id": "tool-2",
-    "name": "Valve Body Service Tool",
-    "price": 39.95,
-    "quantity": 10,
-    "currency": "USD",
-    "image": ""
-  },
-  {
-    "id": "tool-3",
-    "name": "Transmission Solenoid Tester",
-    "price": 59.95,
+    "id": "8l90-ring-installer-set",
+    "name": "8L90 Transmission Ring Installer Set",
+    "description": "Ring installer set for 8L90 transmission service work.",
+    "price": 65.0,
     "quantity": 5,
     "currency": "USD",
-    "image": ""
+    "image": "",
+    "category": "GM Transmissions",
+    "featured": true
   },
   {
-    "id": "tool-4",
-    "name": "Shift Correction Tool",
-    "price": 29.95,
-    "quantity": 8,
+    "id": "10r80-10l90-ring-tool-set",
+    "name": "Ford 10R80 / GM 10L90 Ring Resize Install Tool Set",
+    "description": "Resize and install tool set for 10R80 and 10L90 applications.",
+    "price": 100.0,
+    "quantity": 10,
     "currency": "USD",
-    "image": ""
+    "image": "",
+    "category": "Ford / GM Transmissions",
+    "featured": true
+  },
+  {
+    "id": "4l60e-harness-removal-tool-set",
+    "name": "4L60E / 4L65E / 4L70E / 4L80E Harness Removal Tool Set",
+    "description": "Harness removal tool set for multiple GM transmission applications.",
+    "price": 20.0,
+    "quantity": 4,
+    "currency": "USD",
+    "image": "",
+    "category": "GM Transmissions",
+    "featured": false
   }
 ]
