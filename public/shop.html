@@ -144,7 +144,7 @@ gap:12px;
 
 .lightbox img{
 max-width:95vw;
-max-height:75vh;
+max-height:65vh;
 object-fit:contain;
 background:white;
 padding:10px;
@@ -168,6 +168,36 @@ color:white;
 font-weight:bold;
 min-width:60px;
 text-align:center;
+}
+
+.thumbnail-strip{
+display:flex;
+gap:8px;
+flex-wrap:wrap;
+justify-content:center;
+max-width:95vw;
+}
+
+.thumbnail{
+width:64px;
+height:64px;
+border:2px solid transparent;
+border-radius:6px;
+overflow:hidden;
+background:white;
+cursor:pointer;
+padding:0;
+}
+
+.thumbnail img{
+width:100%;
+height:100%;
+object-fit:cover;
+display:block;
+}
+
+.thumbnail.active{
+border-color:#4da3ff;
 }
 
 .close-btn{
@@ -219,6 +249,7 @@ background:#ddd;
       <div id="lightbox-counter" class="lightbox-counter">1 / 1</div>
       <button onclick="nextImage()">Next ›</button>
     </div>
+    <div id="thumbnail-strip" class="thumbnail-strip"></div>
   </div>
 </div>
 
@@ -272,6 +303,7 @@ function openLightbox(encodedGallery, startIndex){
 currentGallery = JSON.parse(decodeURIComponent(encodedGallery))
 currentImageIndex = startIndex || 0
 updateLightboxImage()
+renderThumbnails()
 document.getElementById("lightbox").classList.add("show")
 }
 
@@ -279,6 +311,30 @@ function updateLightboxImage(){
 if(!currentGallery.length) return
 document.getElementById("lightbox-img").src = currentGallery[currentImageIndex]
 document.getElementById("lightbox-counter").textContent = `${currentImageIndex + 1} / ${currentGallery.length}`
+updateActiveThumbnail()
+}
+
+function renderThumbnails(){
+const strip = document.getElementById("thumbnail-strip")
+strip.innerHTML = ""
+
+currentGallery.forEach((src, index) => {
+const thumb = document.createElement("button")
+thumb.className = "thumbnail" + (index === currentImageIndex ? " active" : "")
+thumb.innerHTML = `<img src="${src}" alt="Thumbnail ${index + 1}">`
+thumb.onclick = function(){
+currentImageIndex = index
+updateLightboxImage()
+}
+strip.appendChild(thumb)
+})
+}
+
+function updateActiveThumbnail(){
+const thumbs = document.querySelectorAll(".thumbnail")
+thumbs.forEach((thumb, index) => {
+thumb.classList.toggle("active", index === currentImageIndex)
+})
 }
 
 function prevImage(){
