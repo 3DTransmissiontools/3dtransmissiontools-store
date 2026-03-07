@@ -88,19 +88,22 @@ flex-direction:column;
 }
 
 .image-box{
-height:180px;
+height:220px;
 background:#e9e9e9;
 display:flex;
 align-items:center;
 justify-content:center;
 overflow:hidden;
+padding:10px;
+box-sizing:border-box;
 }
 
 .image-box img{
 width:100%;
 height:100%;
-object-fit:cover;
+object-fit:contain;
 display:block;
+cursor:pointer;
 }
 
 .card-content{
@@ -166,6 +169,31 @@ color:#666;
 font-size:14px;
 }
 
+.lightbox{
+display:none;
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.88);
+align-items:center;
+justify-content:center;
+z-index:9999;
+padding:20px;
+box-sizing:border-box;
+}
+
+.lightbox img{
+max-width:95vw;
+max-height:90vh;
+object-fit:contain;
+background:white;
+padding:10px;
+border-radius:8px;
+}
+
+.lightbox.show{
+display:flex;
+}
+
 </style>
 </head>
 
@@ -214,10 +242,12 @@ Built to help make service work faster, easier, and more repeatable.
 </section>
 
 <footer>
-
 © 2026 3D Transmission Tools
-
 </footer>
+
+<div id="lightbox" class="lightbox" onclick="closeLightbox()">
+  <img id="lightbox-img" src="" alt="Full size product image">
+</div>
 
 <script>
 
@@ -235,8 +265,13 @@ featuredProducts.forEach(product=>{
 const card=document.createElement("div")
 card.className="card"
 
-const imageHtml = product.image
-? `<img src="${product.image}" alt="${product.name}">`
+const firstImage =
+product.images && product.images.length
+? product.images[0]
+: (product.image || "")
+
+const imageHtml = firstImage
+? `<img src="${firstImage}" alt="${product.name}" onclick="openLightbox('${firstImage}')">`
 : `No Image Yet`
 
 card.innerHTML = `
@@ -266,6 +301,15 @@ container.appendChild(card)
 
 })
 
+}
+
+function openLightbox(src){
+document.getElementById("lightbox-img").src = src
+document.getElementById("lightbox").classList.add("show")
+}
+
+function closeLightbox(){
+document.getElementById("lightbox").classList.remove("show")
 }
 
 async function buy(name,price){
