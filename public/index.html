@@ -181,17 +181,67 @@ padding:20px;
 box-sizing:border-box;
 }
 
-.lightbox img{
+.lightbox.show{
+display:flex;
+}
+
+.lightbox-content{
+position:relative;
 max-width:95vw;
 max-height:90vh;
+display:flex;
+flex-direction:column;
+align-items:center;
+gap:12px;
+}
+
+.lightbox img{
+max-width:95vw;
+max-height:75vh;
 object-fit:contain;
 background:white;
 padding:10px;
 border-radius:8px;
 }
 
-.lightbox.show{
+.lightbox-controls{
 display:flex;
+align-items:center;
+gap:12px;
+}
+
+.lightbox-controls button{
+margin-top:0;
+padding:10px 14px;
+font-size:16px;
+}
+
+.lightbox-counter{
+color:white;
+font-weight:bold;
+min-width:60px;
+text-align:center;
+}
+
+.close-btn{
+position:absolute;
+top:-10px;
+right:-10px;
+background:white;
+color:black;
+border:none;
+border-radius:999px;
+width:36px;
+height:36px;
+font-size:20px;
+font-weight:bold;
+cursor:pointer;
+line-height:1;
+padding:0;
+}
+
+.close-btn:hover{
+background:#ddd;
 }
 
 </style>
@@ -245,11 +295,21 @@ Built to help make service work faster, easier, and more repeatable.
 © 2026 3D Transmission Tools
 </footer>
 
-<div id="lightbox" class="lightbox" onclick="closeLightbox()">
-  <img id="lightbox-img" src="" alt="Full size product image">
+<div id="lightbox" class="lightbox" onclick="closeLightbox(event)">
+  <div class="lightbox-content" onclick="event.stopPropagation()">
+    <button class="close-btn" onclick="closeLightbox(event)">×</button>
+    <img id="lightbox-img" src="" alt="Full size product image">
+    <div class="lightbox-controls">
+      <button onclick="prevImage()">‹ Prev</button>
+      <div id="lightbox-counter" class="lightbox-counter">1 / 1</div>
+      <button onclick="nextImage()">Next ›</button>
+    </div>
+  </div>
 </div>
 
 <script>
+let currentGallery = []
+let currentImageIndex = 0
 
 async function loadProducts(){
 
@@ -265,35 +325,32 @@ featuredProducts.forEach(product=>{
 const card=document.createElement("div")
 card.className="card"
 
-const firstImage =
+const gallery =
 product.images && product.images.length
-? product.images[0]
-: (product.image || "")
+? product.images
+: (product.image ? [product.image] : [])
+
+const firstImage = gallery.length ? gallery[0] : ""
+
+const escapedGallery = encodeURIComponent(JSON.stringify(gallery))
 
 const imageHtml = firstImage
-? `<img src="${firstImage}" alt="${product.name}" onclick="openLightbox('${firstImage}')">`
+? `<img src="${firstImage}" alt="${product.name}" onclick="openLightbox('${escapedGallery}', 0)">`
 : `No Image Yet`
 
 card.innerHTML = `
-
 <div class="image-box">${imageHtml}</div>
 
 <div class="card-content">
-
 <div class="category">${product.category || "General"}</div>
-
 <h4>${product.name}</h4>
-
 <div class="description">${product.description || ""}</div>
-
 <div class="price">$${Number(product.price).toFixed(2)}</div>
-
 <div class="stock">In stock: ${product.quantity}</div>
 
 <button onclick="buy('${product.name.replace(/'/g,"\\'")}',${product.price})">
 Buy Now
 </button>
-
 </div>
 `
 
@@ -303,14 +360,44 @@ container.appendChild(card)
 
 }
 
-function openLightbox(src){
-document.getElementById("lightbox-img").src = src
+function openLightbox(encodedGallery, startIndex){
+currentGallery = JSON.parse(decodeURIComponent(encodedGallery))
+currentImageIndex = startIndex || 0
+updateLightboxImage()
 document.getElementById("lightbox").classList.add("show")
 }
 
-function closeLightbox(){
+function updateLightboxImage(){
+if(!currentGallery.length) return
+document.getElementById("lightbox-img").src = currentGallery[currentImageIndex]
+document.getElementById("lightbox-counter").textContent = `${currentImageIndex + 1} / ${currentGallery.length}`
+}
+
+function prevImage(){
+if(!currentGallery.length) return
+currentImageIndex = (currentImageIndex - 1 + currentGallery.length) % currentGallery.length
+updateLightboxImage()
+}
+
+function nextImage(){
+if(!currentGallery.length) return
+currentImageIndex = (currentImageIndex + 1) % currentGallery.length
+updateLightboxImage()
+}
+
+function closeLightbox(event){
+if(event) event.stopPropagation()
 document.getElementById("lightbox").classList.remove("show")
 }
+
+document.addEventListener("keydown", function(event){
+const lightboxOpen = document.getElementById("lightbox").classList.contains("show")
+if(!lightboxOpen) return
+
+if(event.key === "Escape") closeLightbox()
+if(event.key === "ArrowLeft") prevImage()
+if(event.key === "ArrowRight") nextImage()
+})
 
 async function buy(name,price){
 
@@ -327,7 +414,6 @@ window.location = data.url
 }
 
 loadProducts()
-
 </script>
 
 </body>
