@@ -1,162 +1,202 @@
 [
 {
-"id": 1,
-"name": "6L80/6L90 Automatic Transmission Input Shaft Teflon Ring Installation Tool",
-"price": 49.95,
-"category": "GM Transmissions",
-"description": "Installation tool set for 6L80 and 6L90 input shaft Teflon rings.",
-"image": ""
+"id":"1",
+"name":"20 pieces - 167128A 14305 STEEL U140 U151 U240 U241 FORWARD CLUTCH (.071)",
+"price":20.00,
+"quantity":1,
+"currency":"USD",
+"category":"Toyota / Lexus",
+"description":"Forward clutch steel set for U140 U151 U240 and U241 transmissions.",
+"image":""
 },
 {
-"id": 2,
-"name": "8L90 Transmission Ring Installer Set",
-"price": 65.00,
-"category": "GM Transmissions",
-"description": "Ring installer set for GM 8L90 transmission service work.",
-"image": ""
+"id":"2",
+"name":"6L80 6L90 Automatic Transmission Input Shaft Teflon Ring Installation Tool",
+"price":12.00,
+"quantity":2,
+"currency":"USD",
+"category":"GM",
+"description":"Installation tool set for 6L80 and 6L90 input shaft Teflon rings.",
+"image":""
 },
 {
-"id": 3,
-"name": "Ford 10R80 / GM 10L90 Ring Resize Install Tool Set",
-"price": 100.00,
-"category": "Ford / GM Transmissions",
-"description": "Resize and install tool set for 10R80 and 10L90 transmissions.",
-"image": ""
+"id":"3",
+"name":"4L60E 4L65E 4L70E 4L80E Allison 4T65E Harness Removal Tool Set",
+"price":20.00,
+"quantity":4,
+"currency":"USD",
+"category":"GM / Allison",
+"description":"Harness removal tool set for several GM and Allison transmissions.",
+"image":""
 },
 {
-"id": 4,
-"name": "4L60E / 4L65E / 4L70E / 4L80E Harness Removal Tool",
-"price": 20.00,
-"category": "GM Transmissions",
-"description": "Tool for removing internal wiring harness connectors.",
-"image": ""
+"id":"4",
+"name":"8L90 Transmission Ring Installer Set",
+"price":65.00,
+"quantity":5,
+"currency":"USD",
+"category":"GM",
+"description":"Ring installer set for GM 8L90 transmission service.",
+"image":""
 },
 {
-"id": 5,
-"name": "Valve Body Service Tool",
-"price": 39.95,
-"category": "GM Transmissions",
-"description": "Tool designed to assist with valve body service operations.",
-"image": ""
+"id":"5",
+"name":"4L60E Pump Stator Ring Installer Resizer",
+"price":20.00,
+"quantity":5,
+"currency":"USD",
+"category":"GM",
+"description":"Pump stator ring installer and resizer for 4L60E transmissions.",
+"image":""
 },
 {
-"id": 6,
-"name": "Transmission Solenoid Tester",
-"price": 59.95,
-"category": "Diagnostics",
-"description": "Bench test tool for checking transmission solenoids.",
-"image": ""
+"id":"6",
+"name":"8L90 Case Connector Harness Disconnect Removal Tool",
+"price":25.00,
+"quantity":9,
+"currency":"USD",
+"category":"GM",
+"description":"Tool for disconnecting the 8L90 case connector harness.",
+"image":""
 },
 {
-"id": 7,
-"name": "Shift Correction Tool",
-"price": 29.95,
-"category": "GM Transmissions",
-"description": "Helps diagnose and correct shift timing issues.",
-"image": ""
+"id":"7",
+"name":"10R80 Transmission Harness Connector Removal Tool",
+"price":30.00,
+"quantity":2,
+"currency":"USD",
+"category":"Ford",
+"description":"Harness connector removal tool for Ford 10R80 transmissions.",
+"image":""
 },
 {
-"id": 8,
-"name": "Pressure Test Adapter Kit",
-"price": 45.00,
-"category": "Diagnostics",
-"description": "Adapter kit for transmission hydraulic pressure testing.",
-"image": ""
+"id":"8",
+"name":"Allison Air Test Tool C3 C4 C5 A1000 2000",
+"price":23.00,
+"quantity":4,
+"currency":"USD",
+"category":"Allison",
+"description":"Air test checker tool for Allison transmissions.",
+"image":""
 },
 {
-"id": 9,
-"name": "6L80 Valve Body Alignment Tool",
-"price": 34.95,
-"category": "GM Transmissions",
-"description": "Ensures proper valve body alignment during reassembly.",
-"image": ""
+"id":"9",
+"name":"Ford 10R80 GM 10L90 Ring Resize Install Tool Set",
+"price":100.00,
+"quantity":10,
+"currency":"USD",
+"category":"Ford / GM",
+"description":"Resize and install tool set for 10R80 and 10L90 transmissions.",
+"image":""
 },
 {
-"id": 10,
-"name": "8L90 Clutch Spring Compressor Tool",
-"price": 74.95,
-"category": "GM Transmissions",
-"description": "Compresses clutch springs for 8L90 transmission service.",
-"image": ""
+"id":"10",
+"name":"4L60E Pump Stator Ring Installer And Resizer Set",
+"price":45.00,
+"quantity":5,
+"currency":"USD",
+"category":"GM",
+"description":"Installer and resizer set for 4L60E pump stator rings.",
+"image":""
 },
 {
-"id": 11,
-"name": "4L60E Pump Alignment Tool",
-"price": 27.95,
-"category": "GM Transmissions",
-"description": "Ensures pump alignment during installation.",
-"image": ""
+"id":"11",
+"name":"6L45 6L50 Input Shaft Teflon Ring Sizer Installer",
+"price":35.00,
+"quantity":5,
+"currency":"USD",
+"category":"GM",
+"description":"Input shaft Teflon ring sizing and installation tool.",
+"image":""
 },
 {
-"id": 12,
-"name": "4L80E Case Bushing Installer",
-"price": 38.95,
-"category": "GM Transmissions",
-"description": "Installs case bushings accurately and safely.",
-"image": ""
+"id":"12",
+"name":"4L60E 4L65E 4L70E 700R4 Input Shaft Ring Installer Set",
+"price":45.00,
+"quantity":5,
+"currency":"USD",
+"category":"GM",
+"description":"Installer set for input shaft rings.",
+"image":""
 },
 {
-"id": 13,
-"name": "Transmission Snap Ring Installer",
-"price": 19.95,
-"category": "General Transmission Tools",
-"description": "Tool designed for installing transmission snap rings.",
-"image": ""
+"id":"13",
+"name":"6T40 6T70 6F35 6F50 9T65 9T50 Transmission Teflon Ring Install Tool Set",
+"price":45.00,
+"quantity":5,
+"currency":"USD",
+"category":"GM / Ford",
+"description":"Teflon ring installation tool set for multiple transmissions.",
+"image":""
 },
 {
-"id": 14,
-"name": "Torque Converter Seal Installer",
-"price": 22.95,
-"category": "General Transmission Tools",
-"description": "Installs torque converter seals without damage.",
-"image": ""
+"id":"14",
+"name":"8F35 Ring Sizer And Chain Retainer",
+"price":35.00,
+"quantity":3,
+"currency":"USD",
+"category":"Ford",
+"description":"Ring sizing tool and chain retainer for 8F35 transmissions.",
+"image":""
 },
 {
-"id": 15,
-"name": "Clutch Pack Alignment Tool",
-"price": 26.95,
-"category": "General Transmission Tools",
-"description": "Helps align clutch packs during transmission rebuild.",
-"image": ""
+"id":"15",
+"name":"4L80E Aluminum Accumulator Block Off Plate",
+"price":13.75,
+"quantity":3,
+"currency":"USD",
+"category":"GM",
+"description":"Aluminum accumulator block off plate for 4L80E.",
+"image":""
 },
 {
-"id": 16,
-"name": "Transmission Pump Puller Tool",
-"price": 44.95,
-"category": "General Transmission Tools",
-"description": "Removes transmission pumps safely.",
-"image": ""
+"id":"16",
+"name":"B&M 6L80 Deep Transmission Pan",
+"price":240.00,
+"quantity":4,
+"currency":"USD",
+"category":"GM",
+"description":"Deep transmission pan for GM 6L80 trucks and SUVs.",
+"image":""
 },
 {
-"id": 17,
-"name": "GM Transmission Line Disconnect Tool",
-"price": 15.95,
-"category": "GM Transmissions",
-"description": "Disconnect tool for GM transmission cooler lines.",
-"image": ""
+"id":"17",
+"name":"10L1000 Ring Sizing Tool",
+"price":125.00,
+"quantity":5,
+"currency":"USD",
+"category":"GM",
+"description":"Ring sizing tool for GM 10L1000 transmission.",
+"image":""
 },
 {
-"id": 18,
-"name": "Ford Transmission Line Disconnect Tool",
-"price": 15.95,
-"category": "Ford Transmissions",
-"description": "Disconnect tool for Ford transmission cooler lines.",
-"image": ""
+"id":"18",
+"name":"4L80E Center Support Ring Installation And Sizing Tool Kit",
+"price":45.00,
+"quantity":10,
+"currency":"USD",
+"category":"GM",
+"description":"Installation and sizing kit for 4L80E center support rings.",
+"image":""
 },
 {
-"id": 19,
-"name": "Transmission Seal Driver Kit",
-"price": 52.95,
-"category": "General Transmission Tools",
-"description": "Driver kit for installing transmission seals.",
-"image": ""
+"id":"19",
+"name":"4L80E Input Shaft Ring Installer Set",
+"price":45.00,
+"quantity":5,
+"currency":"USD",
+"category":"GM",
+"description":"Installer set for 4L80E input shaft rings.",
+"image":""
 },
 {
-"id": 20,
-"name": "Universal Transmission Diagnostic Tool",
-"price": 79.95,
-"category": "Diagnostics",
-"description": "Diagnostic tool for troubleshooting transmission issues.",
-"image": ""
+"id":"20",
+"name":"4L60E 700R4 Lip Seal Protector Piston Installer",
+"price":50.00,
+"quantity":4,
+"currency":"USD",
+"category":"GM",
+"description":"Lip seal protector piston installer for 4L60E and 700R4.",
+"image":""
 }
 ]
