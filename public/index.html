@@ -157,14 +157,39 @@
     .logo img{
       height:150px;
     }
+    .topbar{
+display:flex;
+align-items:center;
+justify-content:space-between;
+}
+
+nav a{
+color:white;
+text-decoration:none;
+margin-left:20px;
+font-weight:bold;
+}
+
+nav a:hover{
+text-decoration:underline;
+}
   </style>
 </head>
 <body>
 
   <header>
 
+<div class="topbar">
+
 <div class="logo">
 <img src="logo.png" alt="3D Transmission Tools Logo">
+</div>
+
+<nav>
+<a href="/">Home</a>
+<a href="/shop.html">Shop</a>
+</nav>
+
 </div>
 
 <p>Specialized transmission service tools for builders, shops, and DIY mechanics.</p>
