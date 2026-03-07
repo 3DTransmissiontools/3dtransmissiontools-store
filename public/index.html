@@ -1,87 +1,235 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>3D Transmission Tools</title>
-<style>
-body{
-font-family: Arial;
-margin:40px;
-}
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>3D Transmission Tools</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f5f5f5;
+      color: #111;
+    }
 
-.grid{
-display:grid;
-grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
-gap:20px;
-}
+    header {
+      background: #111;
+      color: white;
+      padding: 20px 24px;
+    }
 
-.card{
-border:1px solid #ccc;
-padding:20px;
-border-radius:8px;
-}
+    header h1 {
+      margin: 0;
+      font-size: 28px;
+    }
 
-button{
-padding:10px;
-background:black;
-color:white;
-border:none;
-cursor:pointer;
-}
-</style>
+    header p {
+      margin: 8px 0 0;
+      color: #ccc;
+    }
+
+    .hero {
+      background: white;
+      padding: 40px 24px;
+      text-align: center;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .hero h2 {
+      margin-top: 0;
+      font-size: 34px;
+    }
+
+    .hero p {
+      max-width: 800px;
+      margin: 0 auto;
+      color: #555;
+      line-height: 1.5;
+    }
+
+    .section {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 20px;
+    }
+
+    .section h3 {
+      margin-top: 0;
+      font-size: 28px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .image-box {
+      height: 180px;
+      background: #e9e9e9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #666;
+      font-size: 14px;
+    }
+
+    .image-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .card-content {
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex-grow: 1;
+    }
+
+    .category {
+      font-size: 12px;
+      font-weight: bold;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .card h4 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.3;
+    }
+
+    .description {
+      color: #555;
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 42px;
+    }
+
+    .price {
+      font-size: 22px;
+      font-weight: bold;
+      margin-top: auto;
+    }
+
+    .stock {
+      font-size: 13px;
+      color: #666;
+    }
+
+    button {
+      margin-top: 8px;
+      padding: 12px;
+      background: #111;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #333;
+    }
+
+    footer {
+      text-align: center;
+      padding: 30px 20px;
+      color: #666;
+      font-size: 14px;
+    }
+  </style>
 </head>
-
 <body>
 
-<h1>3D Transmission Tools</h1>
+  <header>
+    <h1>3D Transmission Tools</h1>
+    <p>Specialized transmission service tools for builders, shops, and DIY mechanics.</p>
+  </header>
 
-<div id="products" class="grid"></div>
+  <section class="hero">
+    <h2>Precision Tools for Transmission Work</h2>
+    <p>
+      Browse specialized tools for GM, Ford, Allison, and other transmission applications.
+      Built to help make service work faster, easier, and more repeatable.
+    </p>
+  </section>
 
-<script>
+  <section class="section">
+    <h3>Featured Products</h3>
+    <div id="products" class="grid"></div>
+  </section>
 
-async function loadProducts(){
+  <footer>
+    © 2026 3D Transmission Tools
+  </footer>
 
-const res = await fetch("products.json")
-const products = await res.json()
+  <script>
+    async function loadProducts() {
+      const res = await fetch("products.json");
+      const products = await res.json();
 
-const container = document.getElementById("products")
+      const container = document.getElementById("products");
 
-products.forEach(product=>{
+      const featuredProducts = products.filter(product => product.featured);
 
-const card = document.createElement("div")
-card.className="card"
+      featuredProducts.forEach(product => {
+        const card = document.createElement("div");
+        card.className = "card";
 
-card.innerHTML = `
-<h3>${product.name}</h3>
-<p>$${product.price}</p>
-<button onclick="buy('${product.name}',${product.price})">Buy Now</button>
-`
+        const imageHtml = product.image
+          ? `<img src="${product.image}" alt="${product.name}">`
+          : `No Image Yet`;
 
-container.appendChild(card)
+        card.innerHTML = `
+          <div class="image-box">${imageHtml}</div>
+          <div class="card-content">
+            <div class="category">${product.category || "General"}</div>
+            <h4>${product.name}</h4>
+            <div class="description">${product.description || ""}</div>
+            <div class="price">$${Number(product.price).toFixed(2)}</div>
+            <div class="stock">In stock: ${product.quantity}</div>
+            <button onclick="buy('${product.name.replace(/'/g, "\\'")}', ${product.price})">Buy Now</button>
+          </div>
+        `;
 
-})
+        container.appendChild(card);
+      });
+    }
 
-}
+    async function buy(name, price) {
+      const res = await fetch("/api/create-checkout-session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name: name,
+          price: price
+        })
+      });
 
-async function buy(name,price){
+      const data = await res.json();
+      window.location = data.url;
+    }
 
-const res = await fetch("/api/create-checkout-session",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({
-name:name,
-price:price
-})
-})
-
-const data = await res.json()
-
-window.location = data.url
-
-}
-
-loadProducts()
-
-</script>
+    loadProducts();
+  </script>
 
 </body>
 </html>
