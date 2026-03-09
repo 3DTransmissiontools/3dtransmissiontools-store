@@ -110,7 +110,12 @@
 "currency":"USD",
 "category":"4L60E",
 "description":"Installer and resizer set for 4L60E pump stator rings.",
-"image":""
+"images": [
+  "https://i.ebayimg.com/images/g/AEcAAeSwVMBoibub/s-l1600.webp",
+  "https://i.ebayimg.com/images/g/NYQAAOSwgOxoLimC/s-l1600.webp",
+  "https://i.ebayimg.com/images/g/9joAAOSwKktoLimC/s-l1600.webp",
+  "https://i.ebayimg.com/images/g/4~YAAeSwYE9oibui/s-l1600.webp"
+]
 },
 {
 "id":"11",
