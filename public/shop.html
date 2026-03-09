@@ -40,6 +40,33 @@ margin:auto;
 padding:30px;
 }
 
+.filters{
+display:flex;
+flex-wrap:wrap;
+gap:12px;
+margin:20px 0 30px 0;
+}
+
+.filters input,
+.filters select{
+padding:12px;
+font-size:15px;
+border:1px solid #ccc;
+border-radius:6px;
+background:white;
+}
+
+.filters input{
+flex:1;
+min-width:240px;
+}
+
+.result-count{
+margin-bottom:20px;
+color:#555;
+font-size:14px;
+}
+
 .grid{
 display:grid;
 grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
@@ -220,6 +247,15 @@ padding:0;
 .close-btn:hover{
 background:#ddd;
 }
+
+.empty-message{
+background:white;
+border:1px solid #ddd;
+border-radius:8px;
+padding:30px;
+text-align:center;
+color:#666;
+}
 </style>
 
 </head>
@@ -235,6 +271,24 @@ background:#ddd;
 <div class="container">
 
 <h2>All Products</h2>
+
+<div class="filters">
+  <input type="text" id="searchInput" placeholder="Search products...">
+
+  <select id="categoryFilter">
+    <option value="all">All Categories</option>
+  </select>
+
+  <select id="sortFilter">
+    <option value="default">Sort By</option>
+    <option value="priceLow">Price: Low to High</option>
+    <option value="priceHigh">Price: High to Low</option>
+    <option value="nameAZ">Name: A to Z</option>
+    <option value="nameZA">Name: Z to A</option>
+  </select>
+</div>
+
+<div id="resultCount" class="result-count"></div>
 
 <div id="products" class="grid"></div>
 
@@ -256,125 +310,197 @@ background:#ddd;
 <script>
 let currentGallery = []
 let currentImageIndex = 0
+let allProducts = []
 
 async function loadProducts(){
+  const res = await fetch("products.json")
+  allProducts = await res.json()
 
-const res = await fetch("products.json")
-const products = await res.json()
+  populateCategories()
+  applyFilters()
+}
 
-const container = document.getElementById("products")
+function populateCategories(){
+  const categoryFilter = document.getElementById("categoryFilter")
 
-products.forEach(product=>{
+  const categories = [...new Set(
+    allProducts
+      .map(product => product.category)
+      .filter(category => category && category.trim() !== "")
+  )]
 
-const card=document.createElement("div")
-card.className="card"
+  categories.sort((a, b) => a.localeCompare(b))
 
-const gallery =
-product.images && product.images.length
-? product.images
-: (product.image ? [product.image] : [])
+  categories.forEach(category => {
+    const option = document.createElement("option")
+    option.value = category
+    option.textContent = category
+    categoryFilter.appendChild(option)
+  })
+}
 
-const firstImage = gallery.length ? gallery[0] : ""
+function applyFilters(){
+  const searchValue = document.getElementById("searchInput").value.toLowerCase().trim()
+  const selectedCategory = document.getElementById("categoryFilter").value
+  const sortValue = document.getElementById("sortFilter").value
 
-const escapedGallery = encodeURIComponent(JSON.stringify(gallery))
+  let filteredProducts = allProducts.filter(product => {
+    const name = (product.name || "").toLowerCase()
+    const description = (product.description || "").toLowerCase()
+    const category = (product.category || "").toLowerCase()
 
-const imageHtml = firstImage
-? `<img src="${firstImage}" alt="${product.name}" onclick="openLightbox('${escapedGallery}', 0)">`
-: "No Image Yet"
+    const matchesSearch =
+      searchValue === "" ||
+      name.includes(searchValue) ||
+      description.includes(searchValue) ||
+      category.includes(searchValue)
 
-card.innerHTML=`
-<div class="image">${imageHtml}</div>
-<h3>${product.name}</h3>
-<div class="description">${product.description || ""}</div>
-<div class="price">$${Number(product.price).toFixed(2)}</div>
-<div class="stock">In stock: ${product.quantity}</div>
-<button onclick="buy('${product.name.replace(/'/g,"\\'")}',${product.price})">
-Buy Now
-</button>
-`
+    const matchesCategory =
+      selectedCategory === "all" ||
+      product.category === selectedCategory
 
-container.appendChild(card)
+    return matchesSearch && matchesCategory
+  })
 
-})
+  if(sortValue === "priceLow"){
+    filteredProducts.sort((a, b) => Number(a.price) - Number(b.price))
+  }
 
+  if(sortValue === "priceHigh"){
+    filteredProducts.sort((a, b) => Number(b.price) - Number(a.price))
+  }
+
+  if(sortValue === "nameAZ"){
+    filteredProducts.sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+  }
+
+  if(sortValue === "nameZA"){
+    filteredProducts.sort((a, b) => (b.name || "").localeCompare(a.name || ""))
+  }
+
+  renderProducts(filteredProducts)
+}
+
+function renderProducts(products){
+  const container = document.getElementById("products")
+  const resultCount = document.getElementById("resultCount")
+
+  container.innerHTML = ""
+  resultCount.textContent = `${products.length} product${products.length === 1 ? "" : "s"} found`
+
+  if(products.length === 0){
+    container.innerHTML = `<div class="empty-message">No products found. Try a different search or category.</div>`
+    return
+  }
+
+  products.forEach(product => {
+    const card = document.createElement("div")
+    card.className = "card"
+
+    const gallery =
+      product.images && product.images.length
+      ? product.images
+      : (product.image ? [product.image] : [])
+
+    const firstImage = gallery.length ? gallery[0] : ""
+    const escapedGallery = encodeURIComponent(JSON.stringify(gallery))
+
+    const imageHtml = firstImage
+      ? `<img src="${firstImage}" alt="${product.name}" onclick="openLightbox('${escapedGallery}', 0)">`
+      : "No Image Yet"
+
+    card.innerHTML = `
+      <div class="image">${imageHtml}</div>
+      <h3>${product.name}</h3>
+      <div class="description">${product.description || ""}</div>
+      <div class="price">$${Number(product.price).toFixed(2)}</div>
+      <div class="stock">In stock: ${product.quantity ?? 0}</div>
+      <button onclick="buy('${String(product.name).replace(/'/g,"\\'")}', ${Number(product.price)})">
+        Buy Now
+      </button>
+    `
+
+    container.appendChild(card)
+  })
 }
 
 function openLightbox(encodedGallery, startIndex){
-currentGallery = JSON.parse(decodeURIComponent(encodedGallery))
-currentImageIndex = startIndex || 0
-updateLightboxImage()
-renderThumbnails()
-document.getElementById("lightbox").classList.add("show")
+  currentGallery = JSON.parse(decodeURIComponent(encodedGallery))
+  currentImageIndex = startIndex || 0
+  updateLightboxImage()
+  renderThumbnails()
+  document.getElementById("lightbox").classList.add("show")
 }
 
 function updateLightboxImage(){
-if(!currentGallery.length) return
-document.getElementById("lightbox-img").src = currentGallery[currentImageIndex]
-document.getElementById("lightbox-counter").textContent = `${currentImageIndex + 1} / ${currentGallery.length}`
-updateActiveThumbnail()
+  if(!currentGallery.length) return
+  document.getElementById("lightbox-img").src = currentGallery[currentImageIndex]
+  document.getElementById("lightbox-counter").textContent = `${currentImageIndex + 1} / ${currentGallery.length}`
+  updateActiveThumbnail()
 }
 
 function renderThumbnails(){
-const strip = document.getElementById("thumbnail-strip")
-strip.innerHTML = ""
+  const strip = document.getElementById("thumbnail-strip")
+  strip.innerHTML = ""
 
-currentGallery.forEach((src, index) => {
-const thumb = document.createElement("button")
-thumb.className = "thumbnail" + (index === currentImageIndex ? " active" : "")
-thumb.innerHTML = `<img src="${src}" alt="Thumbnail ${index + 1}">`
-thumb.onclick = function(){
-currentImageIndex = index
-updateLightboxImage()
-}
-strip.appendChild(thumb)
-})
+  currentGallery.forEach((src, index) => {
+    const thumb = document.createElement("button")
+    thumb.className = "thumbnail" + (index === currentImageIndex ? " active" : "")
+    thumb.innerHTML = `<img src="${src}" alt="Thumbnail ${index + 1}">`
+    thumb.onclick = function(){
+      currentImageIndex = index
+      updateLightboxImage()
+    }
+    strip.appendChild(thumb)
+  })
 }
 
 function updateActiveThumbnail(){
-const thumbs = document.querySelectorAll(".thumbnail")
-thumbs.forEach((thumb, index) => {
-thumb.classList.toggle("active", index === currentImageIndex)
-})
+  const thumbs = document.querySelectorAll(".thumbnail")
+  thumbs.forEach((thumb, index) => {
+    thumb.classList.toggle("active", index === currentImageIndex)
+  })
 }
 
 function prevImage(){
-if(!currentGallery.length) return
-currentImageIndex = (currentImageIndex - 1 + currentGallery.length) % currentGallery.length
-updateLightboxImage()
+  if(!currentGallery.length) return
+  currentImageIndex = (currentImageIndex - 1 + currentGallery.length) % currentGallery.length
+  updateLightboxImage()
 }
 
 function nextImage(){
-if(!currentGallery.length) return
-currentImageIndex = (currentImageIndex + 1) % currentGallery.length
-updateLightboxImage()
+  if(!currentGallery.length) return
+  currentImageIndex = (currentImageIndex + 1) % currentGallery.length
+  updateLightboxImage()
 }
 
 function closeLightbox(event){
-if(event) event.stopPropagation()
-document.getElementById("lightbox").classList.remove("show")
+  if(event) event.stopPropagation()
+  document.getElementById("lightbox").classList.remove("show")
 }
 
 document.addEventListener("keydown", function(event){
-const lightboxOpen = document.getElementById("lightbox").classList.contains("show")
-if(!lightboxOpen) return
+  const lightboxOpen = document.getElementById("lightbox").classList.contains("show")
+  if(!lightboxOpen) return
 
-if(event.key === "Escape") closeLightbox()
-if(event.key === "ArrowLeft") prevImage()
-if(event.key === "ArrowRight") nextImage()
+  if(event.key === "Escape") closeLightbox()
+  if(event.key === "ArrowLeft") prevImage()
+  if(event.key === "ArrowRight") nextImage()
 })
+
+document.getElementById("searchInput").addEventListener("input", applyFilters)
+document.getElementById("categoryFilter").addEventListener("change", applyFilters)
+document.getElementById("sortFilter").addEventListener("change", applyFilters)
 
 async function buy(name,price){
+  const res = await fetch("/api/create-checkout-session",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({name,price})
+  })
 
-const res = await fetch("/api/create-checkout-session",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({name,price})
-})
-
-const data = await res.json()
-
-window.location=data.url
-
+  const data = await res.json()
+  window.location = data.url
 }
 
 loadProducts()
