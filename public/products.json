@@ -30,7 +30,9 @@
 "currency":"USD",
 "category":"8L",
 "description":"Ring installer set for GM 8L90 transmission service.",
-"image":""
+"image":  [
+  "https://i.ebayimg.com/images/g/8EMAAOSwVABn5H9x/s-l1600.webp",
+]
 },
 {
 "id":"5",
