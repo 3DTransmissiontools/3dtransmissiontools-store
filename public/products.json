@@ -58,7 +58,10 @@
 "currency":"USD",
 "category":"8L",
 "description":"Tool for disconnecting the 8L90 case connector harness.",
-"image":""
+"images": [
+  "https://i.ebayimg.com/images/g/GoMAAOSwI25oM4DU/s-l1600.webp",
+  "https://i.ebayimg.com/images/g/8LkAAOSwreZoM4DW/s-l1600.webp"
+]
 },
 {
 "id":"7",
