@@ -5,7 +5,7 @@
 "price":12.00,
 "quantity":2,
 "currency":"USD",
-"category":"6L80/90",
+"category":"6L",
 "description":"Installation tool set for 6L80 and 6L90 input shaft Teflon rings.",
 "image":""
 },
@@ -15,7 +15,7 @@
 "price":20.00,
 "quantity":4,
 "currency":"USD",
-"category":"GM / Allison",
+"category":"4L60E",
 "description":"Harness removal tool set for several GM and Allison transmissions.",
 "images": [
   "https://i.ebayimg.com/images/g/ZH8AAOSw9bhn2zsq/s-l1600.webp",
@@ -28,7 +28,7 @@
 "price":65.00,
 "quantity":5,
 "currency":"USD",
-"category":"GM",
+"category":"8L",
 "description":"Ring installer set for GM 8L90 transmission service.",
 "image":""
 },
@@ -38,7 +38,7 @@
 "price":20.00,
 "quantity":5,
 "currency":"USD",
-"category":"GM",
+"category":"4L60E",
 "description":"Pump stator ring installer and resizer for 4L60E transmissions.",
 "image":""
 },
@@ -48,7 +48,7 @@
 "price":25.00,
 "quantity":9,
 "currency":"USD",
-"category":"GM",
+"category":"8L",
 "description":"Tool for disconnecting the 8L90 case connector harness.",
 "image":""
 },
@@ -58,7 +58,7 @@
 "price":30.00,
 "quantity":2,
 "currency":"USD",
-"category":"Ford",
+"category":"10R/10L",
 "description":"Harness connector removal tool for Ford 10R80 transmissions.",
 "image":""
 },
@@ -78,7 +78,7 @@
 "price":100.00,
 "quantity":10,
 "currency":"USD",
-"category":"Ford / GM",
+"category":"10R/10L",
 "description":"Resize and install tool set for 10R80 and 10L90 transmissions.",
 "images": [
   "https://i.ebayimg.com/images/g/hJ0AAOSwnDxoH81j/s-l1600.webp",
@@ -91,7 +91,7 @@
 "price":45.00,
 "quantity":5,
 "currency":"USD",
-"category":"GM",
+"category":"4L60E",
 "description":"Installer and resizer set for 4L60E pump stator rings.",
 "image":""
 },
@@ -101,7 +101,7 @@
 "price":35.00,
 "quantity":5,
 "currency":"USD",
-"category":"GM",
+"category":"6L",
 "description":"Input shaft Teflon ring sizing and installation tool.",
 "image":""
 },
@@ -111,7 +111,7 @@
 "price":45.00,
 "quantity":5,
 "currency":"USD",
-"category":"GM",
+"category":"4L60E",
 "description":"Installer set for input shaft rings.",
 "image":""
 },
@@ -121,7 +121,7 @@
 "price":45.00,
 "quantity":5,
 "currency":"USD",
-"category":"GM / Ford",
+"category":"6T/6F",
 "description":"Teflon ring installation tool set for multiple transmissions.",
 "image":""
 },
@@ -131,7 +131,7 @@
 "price":35.00,
 "quantity":3,
 "currency":"USD",
-"category":"Ford",
+"category":"8F",
 "description":"Ring sizing tool and chain retainer for 8F35 transmissions.",
 "image":""
 },
@@ -141,7 +141,7 @@
 "price":13.75,
 "quantity":3,
 "currency":"USD",
-"category":"GM",
+"category":"4L80E",
 "description":"Aluminum accumulator block off plate for 4L80E.",
 "image":""
 },
@@ -151,7 +151,7 @@
 "price":240.00,
 "quantity":4,
 "currency":"USD",
-"category":"GM",
+"category":"6L",
 "description":"Deep transmission pan for GM 6L80 trucks and SUVs.",
 "image":""
 },
@@ -161,7 +161,7 @@
 "price":125.00,
 "quantity":5,
 "currency":"USD",
-"category":"GM",
+"category":"10L1000",
 "description":"Ring sizing tool for GM 10L1000 transmission.",
 "image":""
 },
@@ -171,7 +171,7 @@
 "price":45.00,
 "quantity":10,
 "currency":"USD",
-"category":"GM",
+"category":"4L80E",
 "description":"Installation and sizing kit for 4L80E center support rings.",
 "image":""
 },
@@ -181,7 +181,7 @@
 "price":45.00,
 "quantity":5,
 "currency":"USD",
-"category":"GM",
+"category":"4L80E",
 "description":"Installer set for 4L80E input shaft rings.",
 "image":""
 },
@@ -191,7 +191,7 @@
 "price":50.00,
 "quantity":4,
 "currency":"USD",
-"category":"GM",
+"category":"4L60E",
 "description":"Lip seal protector piston installer for 4L60E and 700R4.",
 "image":""
 }
