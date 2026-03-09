@@ -71,7 +71,11 @@
 "currency":"USD",
 "category":"10R/10L",
 "description":"Harness connector removal tool for Ford 10R80 transmissions.",
-"image":""
+"images": [
+  "https://i.ebayimg.com/images/g/nKMAAOSw3~xoN~iQ/s-l1600.webp",
+  "hhttps://i.ebayimg.com/images/g/Ne0AAOSwhKJoN~iY/s-l1600.webp",
+  "https://i.ebayimg.com/images/g/4F0AAOSwlcxoN~ii/s-l1600.webp"
+]
 },
 {
 "id":"8",
