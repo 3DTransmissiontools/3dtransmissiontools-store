@@ -45,7 +45,10 @@
 "currency":"USD",
 "category":"4L60E",
 "description":"Pump stator ring installer and resizer for 4L60E transmissions.",
-"image":""
+"images": [
+  "https://i.ebayimg.com/images/g/NYQAAOSwgOxoLimC/s-l1600.webp",
+  "https://i.ebayimg.com/images/g/9joAAOSwKktoLimC/s-l1600.webp"
+]
 },
 {
 "id":"6",
