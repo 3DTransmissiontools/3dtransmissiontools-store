@@ -125,7 +125,10 @@
 "currency":"USD",
 "category":"6L",
 "description":"Input shaft Teflon ring sizing and installation tool.",
-"image":""
+"images": [
+  "https://i.ebayimg.com/images/g/Zl0AAeSwl2NoixGH/s-l1600.webp",
+  "https://i.ebayimg.com/images/g/U98AAeSwnqloixGP/s-l1600.webp"
+]
 },
 {
 "id":"12",
@@ -135,7 +138,9 @@
 "currency":"USD",
 "category":"4L60E",
 "description":"Installer set for input shaft rings.",
-"image":""
+"image": [
+  "https://i.ebayimg.com/images/g/8AwAAeSwABJokFRL/s-l1600.webp"
+]
 },
 {
 "id":"13",
@@ -145,7 +150,10 @@
 "currency":"USD",
 "category":"6T/6F",
 "description":"Teflon ring installation tool set for multiple transmissions.",
-"image":""
+"images": [
+  "https://i.ebayimg.com/images/g/8goAAeSwgvJor1ky/s-l1600.webp",
+  "https://i.ebayimg.com/images/g/6e8AAeSweShor1ky/s-l1600.webp"
+]
 },
 {
 "id":"14",
@@ -155,7 +163,12 @@
 "currency":"USD",
 "category":"8F",
 "description":"Ring sizing tool and chain retainer for 8F35 transmissions.",
-"image":""
+"images": [
+  "https://i.ebayimg.com/images/g/W9oAAeSweAVo7qIo/s-l1600.webp",
+  "https://i.ebayimg.com/images/g/zkYAAeSwNyto7qIu/s-l1600.webp",
+  "https://i.ebayimg.com/images/g/oMoAAeSwkNFo8HQY/s-l1600.webp",
+  "https://i.ebayimg.com/images/g/LEgAAeSwnudo8HQj/s-l1600.webp"
+]
 },
 {
 "id":"15",
