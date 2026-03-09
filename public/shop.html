@@ -435,7 +435,7 @@ ${product.category ? `<div class="category">${product.category}</div>` : ""}
 <div class="description">${product.description || ""}</div>
 <div class="price">$${Number(product.price).toFixed(2)}</div>
 <div class="stock">In stock: ${product.quantity ?? 0}</div>
-<button onclick="buy('${String(product.name).replace(/'/g,"\\'")}', ${Number(product.price)})">
+<button onclick="buy('${String(product.id).replace(/'/g,"\\'")}')">
 Buy Now
 </button>
 `
@@ -513,15 +513,21 @@ document.getElementById("searchInput").addEventListener("input",applyFilters)
 document.getElementById("categoryFilter").addEventListener("change",applyFilters)
 document.getElementById("sortFilter").addEventListener("change",applyFilters)
 
-async function buy(name,price){
+async function buy(id){
 
 const res=await fetch("/api/create-checkout-session",{
 method:"POST",
 headers:{"Content-Type":"application/json"},
-body:JSON.stringify({name,price})
+body:JSON.stringify({id:id})
 })
 
 const data=await res.json()
+
+if(!res.ok){
+alert(data.error || "Checkout failed")
+return
+}
+
 window.location=data.url
 }
 
