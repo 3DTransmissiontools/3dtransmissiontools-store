@@ -1,6 +1,14 @@
 import Stripe from "stripe";
+import fs from "fs";
+import path from "path";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+function loadProducts() {
+  const filePath = path.join(process.cwd(), "public", "products.json");
+  const fileContents = fs.readFileSync(filePath, "utf8");
+  return JSON.parse(fileContents);
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -8,14 +16,21 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { name, price } = req.body;
+    const { id } = req.body;
 
-    if (!name || typeof name !== "string") {
-      return res.status(400).json({ error: "Missing or invalid product name" });
+    if (!id || typeof id !== "string") {
+      return res.status(400).json({ error: "Missing or invalid product id" });
     }
 
-    if (typeof price !== "number" || price <= 0) {
-      return res.status(400).json({ error: "Missing or invalid price" });
+    const products = loadProducts();
+    const product = products.find((p) => p.id === id);
+
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    if (typeof product.price !== "number" || product.price <= 0) {
+      return res.status(400).json({ error: "Invalid product price" });
     }
 
     const session = await stripe.checkout.sessions.create({
@@ -30,10 +45,10 @@ export default async function handler(req, res) {
         {
           price_data: {
             currency: "usd",
-            unit_amount: Math.round(price * 100),
+            unit_amount: Math.round(product.price * 100),
             tax_behavior: "exclusive",
             product_data: {
-              name: name,
+              name: product.name,
               tax_code: "txcd_99999999"
             }
           },
