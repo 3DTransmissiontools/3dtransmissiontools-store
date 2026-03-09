@@ -178,7 +178,10 @@
 "currency":"USD",
 "category":"4L80E",
 "description":"Aluminum accumulator block off plate for 4L80E.",
-"image":""
+"images": [
+  "https://i.ebayimg.com/images/g/WowAAeSw3GJpMKO0/s-l1600.webp",
+  "https://i.ebayimg.com/images/g/hgMAAeSwcxppMKd9/s-l1600.webp"
+]
 },
 {
 "id":"16",
@@ -188,7 +191,10 @@
 "currency":"USD",
 "category":"6L",
 "description":"Deep transmission pan for GM 6L80 trucks and SUVs.",
-"image":""
+"images": [
+  "https://i.ebayimg.com/images/g/WowAAeSw3GJpMKO0/s-l1600.webp",
+  "https://i.ebayimg.com/images/g/hgMAAeSwcxppMKd9/s-l1600.webp"
+]
 },
 {
 "id":"17",
@@ -198,7 +204,10 @@
 "currency":"USD",
 "category":"10L1000",
 "description":"Ring sizing tool for GM 10L1000 transmission.",
-"image":""
+"images": [
+  "https://i.ebayimg.com/images/g/bvIAAeSw23NpYuvy/s-l1600.webp",
+  "https://i.ebayimg.com/images/g/mDYAAeSwQWtpYuwU/s-l1600.webp"
+]
 },
 {
 "id":"18",
@@ -208,7 +217,10 @@
 "currency":"USD",
 "category":"4L80E",
 "description":"Installation and sizing kit for 4L80E center support rings.",
-"image":""
+"images": [
+  "https://i.ebayimg.com/images/g/0QoAAOSw1u9n5EVT/s-l1600.webp",
+  "https://i.ebayimg.com/images/g/3iQAAeSwhd9pgZjr/s-l1600.webp"
+]
 },
 {
 "id":"19",
@@ -218,7 +230,11 @@
 "currency":"USD",
 "category":"4L80E",
 "description":"Installer set for 4L80E input shaft rings.",
-"image":""
+"images": [
+  "https://i.ebayimg.com/images/g/0QoAAOSw1u9n5EVT/s-l1600.webp",
+  "https://i.ebayimg.com/images/g/R2YAAOSw0d5n5EVT/s-l1600.webp",
+  "https://i.ebayimg.com/images/g/A6UAAOSwC3tn5EVT/s-l1600.webp"
+]
 },
 {
 "id":"20",
@@ -228,6 +244,10 @@
 "currency":"USD",
 "category":"4L60E",
 "description":"Lip seal protector piston installer for 4L60E and 700R4.",
-"image":""
+"images": [
+  "https://i.ebayimg.com/images/g/GdAAAeSwzl1pncka/s-l1600.webp",
+  "https://i.ebayimg.com/images/g/S7wAAeSwwYxprwqx/s-l1600.webp",
+  "https://i.ebayimg.com/images/g/8R0AAeSwFWNprwq~/s-l1600.webp"
+]
 }
 ]
