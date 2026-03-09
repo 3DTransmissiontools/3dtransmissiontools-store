@@ -8,6 +8,16 @@ export default async function handler(req, res) {
   }
 
   try {
+    const { name, price } = req.body;
+
+    if (!name || typeof name !== "string") {
+      return res.status(400).json({ error: "Missing or invalid product name" });
+    }
+
+    if (typeof price !== "number" || price <= 0) {
+      return res.status(400).json({ error: "Missing or invalid price" });
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
@@ -20,12 +30,12 @@ export default async function handler(req, res) {
         {
           price_data: {
             currency: "usd",
+            unit_amount: Math.round(price * 100),
             tax_behavior: "exclusive",
             product_data: {
-              name: "6L80 / 6L90 Solenoid Tool",
+              name: name,
               tax_code: "txcd_99999999"
-            },
-            unit_amount: 4995
+            }
           },
           quantity: 1
         }
@@ -39,8 +49,8 @@ export default async function handler(req, res) {
       cancel_url: "https://3dtransmissiontools.com/cancel.html"
     });
 
-    res.status(200).json({ url: session.url });
+    return res.status(200).json({ url: session.url });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 }
