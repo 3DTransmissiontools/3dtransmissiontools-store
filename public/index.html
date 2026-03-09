@@ -379,7 +379,7 @@ card.innerHTML = `
 <div class="price">$${Number(product.price).toFixed(2)}</div>
 <div class="stock">In stock: ${product.quantity}</div>
 
-<button onclick="buy('${product.name.replace(/'/g,"\\'")}',${product.price})">
+<button onclick="buy('${String(product.id).replace(/'/g,"\\'")}')">
 Buy Now
 </button>
 </div>
@@ -455,15 +455,20 @@ if(event.key === "ArrowLeft") prevImage()
 if(event.key === "ArrowRight") nextImage()
 })
 
-async function buy(name,price){
+async function buy(id){
 
 const res = await fetch("/api/create-checkout-session",{
 method:"POST",
 headers:{"Content-Type":"application/json"},
-body:JSON.stringify({name:name,price:price})
+body:JSON.stringify({id:id})
 })
 
 const data = await res.json()
+
+if(!res.ok){
+alert(data.error || "Checkout failed")
+return
+}
 
 window.location = data.url
 
