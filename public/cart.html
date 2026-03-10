@@ -127,10 +127,10 @@ font-weight:bold;
 }
 
 .grand-total{
-font-size:24px;
+font-size:20px;
 font-weight:bold;
-margin-top:16px;
-padding-top:16px;
+margin-top:12px;
+padding-top:12px;
 border-top:1px solid #ddd;
 }
 
@@ -157,6 +157,20 @@ color:#666;
 color:#555;
 font-size:14px;
 }
+
+.shipping-block{
+margin-top:18px;
+padding:16px;
+background:#fafafa;
+border:1px solid #e5e5e5;
+border-radius:8px;
+}
+
+.shipping-title{
+font-weight:bold;
+margin-bottom:10px;
+font-size:16px;
+}
 </style>
 
 </head>
@@ -180,19 +194,33 @@ font-size:14px;
     <span id="estimated-weight">0 oz</span>
   </div>
 
-  <div class="summary-row estimate">
-    <span>Estimated USPS Ground Advantage:</span>
-    <span id="estimated-shipping">$0.00</span>
-  </div>
-
   <div class="summary-row total">
     <span>Subtotal:</span>
     <span>$<span id="subtotal">0.00</span></span>
   </div>
 
+  <div class="shipping-block">
+    <div class="shipping-title">Estimated Shipping Options</div>
+
+    <div class="summary-row estimate">
+      <span>USPS Ground Advantage:</span>
+      <span id="estimated-ground">$0.00</span>
+    </div>
+
+    <div class="summary-row estimate">
+      <span>USPS Priority Mail:</span>
+      <span id="estimated-priority">$0.00</span>
+    </div>
+  </div>
+
   <div class="summary-row grand-total">
-    <span>Estimated Order Total:</span>
-    <span>$<span id="estimated-total">0.00</span></span>
+    <span>Estimated Total (Ground):</span>
+    <span>$<span id="estimated-total-ground">0.00</span></span>
+  </div>
+
+  <div class="summary-row grand-total">
+    <span>Estimated Total (Priority):</span>
+    <span>$<span id="estimated-total-priority">0.00</span></span>
   </div>
 </div>
 
@@ -202,7 +230,7 @@ font-size:14px;
 </div>
 
 <div class="note">
-Shipping and taxes are finalized at checkout. Estimated total shown here includes subtotal plus estimated shipping, but not tax.
+Shipping and taxes are finalized at checkout. Totals shown here include subtotal plus estimated shipping, but not tax.
 </div>
 
 </div>
@@ -231,13 +259,22 @@ return 0
 return weight
 }
 
-function getEstimatedShipping(totalWeightOz){
+function getEstimatedGroundShipping(totalWeightOz){
 if(totalWeightOz <= 0) return 0
-if(totalWeightOz <= 16) return 595
-if(totalWeightOz <= 32) return 895
-if(totalWeightOz <= 48) return 1195
-if(totalWeightOz <= 64) return 1495
+if(totalWeightOz <= 16) return 895
+if(totalWeightOz <= 32) return 1095
+if(totalWeightOz <= 48) return 1395
+if(totalWeightOz <= 64) return 1795
 return 1895
+}
+
+function getEstimatedPriorityShipping(totalWeightOz){
+if(totalWeightOz <= 0) return 0
+if(totalWeightOz <= 16) return 1295
+if(totalWeightOz <= 32) return 1795
+if(totalWeightOz <= 48) return 2095
+if(totalWeightOz <= 64) return 2695
+return 3295
 }
 
 function formatWeight(totalWeightOz){
@@ -270,8 +307,10 @@ if(!cart.length){
 container.innerHTML = `<div class="empty">Your cart is empty.</div>`
 document.getElementById("subtotal").textContent = "0.00"
 document.getElementById("estimated-weight").textContent = "0 oz"
-document.getElementById("estimated-shipping").textContent = "$0.00"
-document.getElementById("estimated-total").textContent = "0.00"
+document.getElementById("estimated-ground").textContent = "$0.00"
+document.getElementById("estimated-priority").textContent = "$0.00"
+document.getElementById("estimated-total-ground").textContent = "0.00"
+document.getElementById("estimated-total-priority").textContent = "0.00"
 return
 }
 
@@ -312,13 +351,18 @@ onchange="updateQuantityAndRefresh('${item.id}', this.value)"
 container.appendChild(div)
 })
 
-const estimatedShippingCents = getEstimatedShipping(totalWeightOz)
-const estimatedTotal = subtotal + (estimatedShippingCents / 100)
+const estimatedGroundCents = getEstimatedGroundShipping(totalWeightOz)
+const estimatedPriorityCents = getEstimatedPriorityShipping(totalWeightOz)
+
+const estimatedGroundTotal = subtotal + (estimatedGroundCents / 100)
+const estimatedPriorityTotal = subtotal + (estimatedPriorityCents / 100)
 
 document.getElementById("subtotal").textContent = subtotal.toFixed(2)
 document.getElementById("estimated-weight").textContent = formatWeight(totalWeightOz)
-document.getElementById("estimated-shipping").textContent = `$${(estimatedShippingCents / 100).toFixed(2)}`
-document.getElementById("estimated-total").textContent = estimatedTotal.toFixed(2)
+document.getElementById("estimated-ground").textContent = `$${(estimatedGroundCents / 100).toFixed(2)}`
+document.getElementById("estimated-priority").textContent = `$${(estimatedPriorityCents / 100).toFixed(2)}`
+document.getElementById("estimated-total-ground").textContent = estimatedGroundTotal.toFixed(2)
+document.getElementById("estimated-total-priority").textContent = estimatedPriorityTotal.toFixed(2)
 }
 
 function updateQuantityAndRefresh(id, value){
