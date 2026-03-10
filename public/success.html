@@ -2,12 +2,78 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Order Successful</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Order Successful - 3D Transmission Tools</title>
+
+<style>
+body{
+font-family:Arial, sans-serif;
+background:#f5f5f5;
+margin:0;
+padding:30px;
+color:#111;
+}
+
+.container{
+max-width:700px;
+margin:60px auto;
+background:white;
+padding:30px;
+border-radius:10px;
+box-shadow:0 2px 10px rgba(0,0,0,0.06);
+text-align:center;
+}
+
+h1{
+margin-top:0;
+}
+
+p{
+color:#555;
+line-height:1.5;
+}
+
+.actions{
+margin-top:24px;
+display:flex;
+gap:12px;
+justify-content:center;
+flex-wrap:wrap;
+}
+
+a{
+display:inline-block;
+padding:12px 16px;
+background:black;
+color:white;
+text-decoration:none;
+border-radius:6px;
+font-weight:bold;
+}
+
+a:hover{
+background:#333;
+}
+</style>
 </head>
 
 <body>
+
+<div class="container">
 <h1>Thank you for your order!</h1>
 <p>Your payment was successful.</p>
-<a href="/">Return to homepage</a>
+<p>Your cart has been cleared and you can keep shopping anytime.</p>
+
+<div class="actions">
+<a href="/">Return to Homepage</a>
+<a href="/shop.html">Continue Shopping</a>
+</div>
+</div>
+
+<script src="/cart.js"></script>
+<script>
+clearCart()
+</script>
+
 </body>
 </html>
