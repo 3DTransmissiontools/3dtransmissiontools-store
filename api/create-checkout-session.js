@@ -27,6 +27,30 @@ function getValidQuantity(value, maxStock = 99) {
   return Math.min(parsed, safeMax);
 }
 
+function getWeightOz(product) {
+  const weight = Number(product.weight_oz);
+  if (!Number.isFinite(weight) || weight <= 0) {
+    return 8;
+  }
+  return weight;
+}
+
+function getStandardShippingAmount(totalWeightOz) {
+  if (totalWeightOz <= 16) return 595;
+  if (totalWeightOz <= 32) return 895;
+  if (totalWeightOz <= 48) return 1195;
+  if (totalWeightOz <= 64) return 1495;
+  return 1895;
+}
+
+function getExpeditedShippingAmount(totalWeightOz) {
+  if (totalWeightOz <= 16) return 1095;
+  if (totalWeightOz <= 32) return 1495;
+  if (totalWeightOz <= 48) return 1895;
+  if (totalWeightOz <= 64) return 2495;
+  return 3295;
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -41,6 +65,7 @@ export default async function handler(req, res) {
 
     const products = loadProducts();
     const line_items = [];
+    let totalWeightOz = 0;
 
     for (const item of items) {
       if (!item || typeof item.id !== "string") {
@@ -63,6 +88,9 @@ export default async function handler(req, res) {
           : 99;
 
       const safeQuantity = getValidQuantity(item.quantity, availableStock);
+      const weightOz = getWeightOz(product);
+
+      totalWeightOz += weightOz * safeQuantity;
 
       line_items.push({
         price_data: {
@@ -75,6 +103,9 @@ export default async function handler(req, res) {
         quantity: safeQuantity
       });
     }
+
+    const standardShippingAmount = getStandardShippingAmount(totalWeightOz);
+    const expeditedShippingAmount = getExpeditedShippingAmount(totalWeightOz);
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -90,18 +121,18 @@ export default async function handler(req, res) {
           shipping_rate_data: {
             type: "fixed_amount",
             fixed_amount: {
-              amount: 695,
+              amount: standardShippingAmount,
               currency: "usd"
             },
-            display_name: "Standard Shipping",
+            display_name: "USPS Ground Advantage",
             delivery_estimate: {
               minimum: {
                 unit: "business_day",
-                value: 5
+                value: 3
               },
               maximum: {
                 unit: "business_day",
-                value: 7
+                value: 6
               }
             }
           }
@@ -110,14 +141,14 @@ export default async function handler(req, res) {
           shipping_rate_data: {
             type: "fixed_amount",
             fixed_amount: {
-              amount: 1895,
+              amount: expeditedShippingAmount,
               currency: "usd"
             },
-            display_name: "Expedited Shipping",
+            display_name: "USPS Priority Mail",
             delivery_estimate: {
               minimum: {
                 unit: "business_day",
-                value: 2
+                value: 1
               },
               maximum: {
                 unit: "business_day",
