@@ -141,7 +141,59 @@ color:#666;
 margin-top:6px;
 }
 
-button{
+.quantity-wrap{
+display:flex;
+align-items:center;
+gap:8px;
+margin-top:10px;
+}
+
+.quantity-label{
+font-size:14px;
+font-weight:bold;
+color:#333;
+min-width:28px;
+}
+
+.quantity-controls{
+display:inline-flex;
+align-items:center;
+border:1px solid #ccc;
+border-radius:6px;
+overflow:hidden;
+background:white;
+}
+
+.quantity-controls button{
+margin:0;
+padding:0;
+width:36px;
+height:36px;
+background:#f3f3f3;
+color:#111;
+border:none;
+border-radius:0;
+font-size:18px;
+font-weight:bold;
+cursor:pointer;
+}
+
+.quantity-controls button:hover{
+background:#e3e3e3;
+}
+
+.quantity-controls input{
+width:56px;
+height:36px;
+border:none;
+border-left:1px solid #ccc;
+border-right:1px solid #ccc;
+text-align:center;
+font-size:15px;
+outline:none;
+}
+
+.buy-btn{
 background:black;
 color:white;
 border:none;
@@ -152,7 +204,7 @@ border-radius:6px;
 font-weight:bold;
 }
 
-button:hover{
+.buy-btn:hover{
 background:#333;
 }
 
@@ -327,6 +379,50 @@ let currentGallery = []
 let currentImageIndex = 0
 let allProducts = []
 
+function escapeHtml(value){
+return String(value ?? "")
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;")
+.replace(/"/g,"&quot;")
+.replace(/'/g,"&#39;")
+}
+
+function getSafeMaxQty(product){
+const stock = Number(product.quantity ?? 99)
+if(Number.isFinite(stock) && stock > 0){
+return Math.min(stock, 99)
+}
+return 99
+}
+
+function changeQty(inputId, delta){
+const input = document.getElementById(inputId)
+if(!input) return
+
+const min = Number(input.min || 1)
+const max = Number(input.max || 99)
+const current = Number(input.value || min)
+const next = current + delta
+
+input.value = Math.max(min, Math.min(max, next))
+}
+
+function getQty(productId){
+const input = document.getElementById("qty-" + productId)
+if(!input) return 1
+
+const min = Number(input.min || 1)
+const max = Number(input.max || 99)
+let value = Number(input.value || 1)
+
+if(!Number.isInteger(value) || value < min) value = min
+if(value > max) value = max
+
+input.value = value
+return value
+}
+
 async function loadProducts(){
 const res = await fetch("products.json")
 allProducts = await res.json()
@@ -423,19 +519,41 @@ product.images && product.images.length
 
 const firstImage=gallery.length ? gallery[0] : ""
 const escapedGallery=encodeURIComponent(JSON.stringify(gallery))
+const safeId=String(product.id)
+const safeName=escapeHtml(product.name)
+const safeDescription=escapeHtml(product.description || "")
+const safeCategory=escapeHtml(product.category || "")
+const maxQty=getSafeMaxQty(product)
 
 const imageHtml=firstImage
-? `<img src="${firstImage}" alt="${product.name}" onclick="openLightbox('${escapedGallery}', 0)">`
+? `<img src="${firstImage}" alt="${safeName}" onclick="openLightbox('${escapedGallery}', 0)">`
 : "No Image Yet"
 
 card.innerHTML=`
 <div class="image">${imageHtml}</div>
-<h3>${product.name}</h3>
-${product.category ? `<div class="category">${product.category}</div>` : ""}
-<div class="description">${product.description || ""}</div>
+<h3>${safeName}</h3>
+${product.category ? `<div class="category">${safeCategory}</div>` : ""}
+<div class="description">${safeDescription}</div>
 <div class="price">$${Number(product.price).toFixed(2)}</div>
 <div class="stock">In stock: ${product.quantity ?? 0}</div>
-<button onclick="buy('${String(product.id).replace(/'/g,"\\'")}')">
+
+<div class="quantity-wrap">
+<div class="quantity-label">Qty</div>
+<div class="quantity-controls">
+<button type="button" onclick="changeQty('qty-${safeId}', -1)">−</button>
+<input
+id="qty-${safeId}"
+type="number"
+min="1"
+max="${maxQty}"
+value="1"
+inputmode="numeric"
+>
+<button type="button" onclick="changeQty('qty-${safeId}', 1)">+</button>
+</div>
+</div>
+
+<button class="buy-btn" onclick="buy('${safeId.replace(/'/g,"\\'")}')">
 Buy Now
 </button>
 `
@@ -515,10 +633,15 @@ document.getElementById("sortFilter").addEventListener("change",applyFilters)
 
 async function buy(id){
 
+const quantity = getQty(id)
+
 const res=await fetch("/api/create-checkout-session",{
 method:"POST",
 headers:{"Content-Type":"application/json"},
-body:JSON.stringify({id:id})
+body:JSON.stringify({
+id:id,
+quantity:quantity
+})
 })
 
 const data=await res.json()
