@@ -126,6 +126,14 @@ font-size:22px;
 font-weight:bold;
 }
 
+.grand-total{
+font-size:24px;
+font-weight:bold;
+margin-top:16px;
+padding-top:16px;
+border-top:1px solid #ddd;
+}
+
 .actions{
 display:flex;
 gap:12px;
@@ -181,6 +189,11 @@ font-size:14px;
     <span>Subtotal:</span>
     <span>$<span id="subtotal">0.00</span></span>
   </div>
+
+  <div class="summary-row grand-total">
+    <span>Estimated Order Total:</span>
+    <span>$<span id="estimated-total">0.00</span></span>
+  </div>
 </div>
 
 <div class="actions">
@@ -189,7 +202,7 @@ font-size:14px;
 </div>
 
 <div class="note">
-Shipping and taxes are finalized at checkout. Shipping shown here is an estimate based on product weight.
+Shipping and taxes are finalized at checkout. Estimated total shown here includes subtotal plus estimated shipping, but not tax.
 </div>
 
 </div>
@@ -258,6 +271,7 @@ container.innerHTML = `<div class="empty">Your cart is empty.</div>`
 document.getElementById("subtotal").textContent = "0.00"
 document.getElementById("estimated-weight").textContent = "0 oz"
 document.getElementById("estimated-shipping").textContent = "$0.00"
+document.getElementById("estimated-total").textContent = "0.00"
 return
 }
 
@@ -299,10 +313,12 @@ container.appendChild(div)
 })
 
 const estimatedShippingCents = getEstimatedShipping(totalWeightOz)
+const estimatedTotal = subtotal + (estimatedShippingCents / 100)
 
 document.getElementById("subtotal").textContent = subtotal.toFixed(2)
 document.getElementById("estimated-weight").textContent = formatWeight(totalWeightOz)
 document.getElementById("estimated-shipping").textContent = `$${(estimatedShippingCents / 100).toFixed(2)}`
+document.getElementById("estimated-total").textContent = estimatedTotal.toFixed(2)
 }
 
 function updateQuantityAndRefresh(id, value){
