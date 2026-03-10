@@ -127,11 +127,13 @@ font-weight:bold;
 }
 
 .grand-total{
-font-size:20px;
+font-size:24px;
 font-weight:bold;
-margin-top:12px;
-padding-top:12px;
-border-top:1px solid #ddd;
+margin-top:16px;
+padding:16px;
+border:2px solid #111;
+border-radius:8px;
+background:#fafafa;
 }
 
 .actions{
@@ -171,6 +173,40 @@ font-weight:bold;
 margin-bottom:10px;
 font-size:16px;
 }
+
+.shipping-option{
+display:flex;
+justify-content:space-between;
+align-items:center;
+gap:16px;
+padding:12px;
+border:1px solid #ddd;
+border-radius:8px;
+margin-top:10px;
+background:white;
+cursor:pointer;
+}
+
+.shipping-option.selected{
+border:2px solid #111;
+background:#f3f3f3;
+}
+
+.shipping-option-left{
+display:flex;
+align-items:center;
+gap:10px;
+}
+
+.shipping-option-name{
+font-weight:bold;
+}
+
+.shipping-option-meta{
+font-size:13px;
+color:#666;
+margin-top:3px;
+}
 </style>
 
 </head>
@@ -200,27 +236,34 @@ font-size:16px;
   </div>
 
   <div class="shipping-block">
-    <div class="shipping-title">Estimated Shipping Options</div>
+    <div class="shipping-title">Choose Your Shipping Estimate</div>
 
-    <div class="summary-row estimate">
-      <span>USPS Ground Advantage:</span>
-      <span id="estimated-ground">$0.00</span>
-    </div>
+    <label id="ground-option" class="shipping-option selected">
+      <div class="shipping-option-left">
+        <input type="radio" name="shippingMethod" value="ground" checked onchange="setPreferredShipping('ground')">
+        <div>
+          <div class="shipping-option-name">USPS Ground Advantage</div>
+          <div class="shipping-option-meta">Economy shipping</div>
+        </div>
+      </div>
+      <div id="estimated-ground">$0.00</div>
+    </label>
 
-    <div class="summary-row estimate">
-      <span>USPS Priority Mail:</span>
-      <span id="estimated-priority">$0.00</span>
-    </div>
+    <label id="priority-option" class="shipping-option">
+      <div class="shipping-option-left">
+        <input type="radio" name="shippingMethod" value="priority" onchange="setPreferredShipping('priority')">
+        <div>
+          <div class="shipping-option-name">USPS Priority Mail</div>
+          <div class="shipping-option-meta">Faster delivery</div>
+        </div>
+      </div>
+      <div id="estimated-priority">$0.00</div>
+    </label>
   </div>
 
   <div class="summary-row grand-total">
-    <span>Estimated Total (Ground):</span>
-    <span>$<span id="estimated-total-ground">0.00</span></span>
-  </div>
-
-  <div class="summary-row grand-total">
-    <span>Estimated Total (Priority):</span>
-    <span>$<span id="estimated-total-priority">0.00</span></span>
+    <span>Estimated Order Total:</span>
+    <span>$<span id="estimated-total-selected">0.00</span></span>
   </div>
 </div>
 
@@ -230,7 +273,7 @@ font-size:16px;
 </div>
 
 <div class="note">
-Shipping and taxes are finalized at checkout. Totals shown here include subtotal plus estimated shipping, but not tax.
+Shipping and taxes are finalized at checkout. The total shown here includes subtotal plus your selected shipping estimate, but not tax.
 </div>
 
 </div>
@@ -239,11 +282,13 @@ Shipping and taxes are finalized at checkout. Totals shown here include subtotal
 
 <script>
 let products = []
+let preferredShipping = localStorage.getItem("preferredShippingMethod") || "ground"
 
 async function loadProducts(){
 try{
 const res = await fetch("/products.json")
 products = await res.json()
+syncSelectedShippingUI()
 renderCart()
 }catch(error){
 console.error("Failed to load products:", error)
@@ -261,19 +306,19 @@ return weight
 
 function getEstimatedGroundShipping(totalWeightOz){
 if(totalWeightOz <= 0) return 0
-if(totalWeightOz <= 16) return 895
-if(totalWeightOz <= 32) return 1095
-if(totalWeightOz <= 48) return 1395
-if(totalWeightOz <= 64) return 1795
+if(totalWeightOz <= 16) return 595
+if(totalWeightOz <= 32) return 895
+if(totalWeightOz <= 48) return 1195
+if(totalWeightOz <= 64) return 1495
 return 1895
 }
 
 function getEstimatedPriorityShipping(totalWeightOz){
 if(totalWeightOz <= 0) return 0
-if(totalWeightOz <= 16) return 1295
-if(totalWeightOz <= 32) return 1795
-if(totalWeightOz <= 48) return 2095
-if(totalWeightOz <= 64) return 2695
+if(totalWeightOz <= 16) return 1095
+if(totalWeightOz <= 32) return 1495
+if(totalWeightOz <= 48) return 1895
+if(totalWeightOz <= 64) return 2495
 return 3295
 }
 
@@ -294,6 +339,26 @@ return `${pounds} lb ${ounces} oz`
 return `${totalWeightOz} oz`
 }
 
+function setPreferredShipping(method){
+preferredShipping = method === "priority" ? "priority" : "ground"
+localStorage.setItem("preferredShippingMethod", preferredShipping)
+syncSelectedShippingUI()
+renderCart()
+}
+
+function syncSelectedShippingUI(){
+const groundRadio = document.querySelector('input[name="shippingMethod"][value="ground"]')
+const priorityRadio = document.querySelector('input[name="shippingMethod"][value="priority"]')
+const groundOption = document.getElementById("ground-option")
+const priorityOption = document.getElementById("priority-option")
+
+if(groundRadio) groundRadio.checked = preferredShipping === "ground"
+if(priorityRadio) priorityRadio.checked = preferredShipping === "priority"
+
+if(groundOption) groundOption.classList.toggle("selected", preferredShipping === "ground")
+if(priorityOption) priorityOption.classList.toggle("selected", preferredShipping === "priority")
+}
+
 function renderCart(){
 const cart = getCart()
 const container = document.getElementById("cart-items")
@@ -309,8 +374,7 @@ document.getElementById("subtotal").textContent = "0.00"
 document.getElementById("estimated-weight").textContent = "0 oz"
 document.getElementById("estimated-ground").textContent = "$0.00"
 document.getElementById("estimated-priority").textContent = "$0.00"
-document.getElementById("estimated-total-ground").textContent = "0.00"
-document.getElementById("estimated-total-priority").textContent = "0.00"
+document.getElementById("estimated-total-selected").textContent = "0.00"
 return
 }
 
@@ -353,16 +417,14 @@ container.appendChild(div)
 
 const estimatedGroundCents = getEstimatedGroundShipping(totalWeightOz)
 const estimatedPriorityCents = getEstimatedPriorityShipping(totalWeightOz)
-
-const estimatedGroundTotal = subtotal + (estimatedGroundCents / 100)
-const estimatedPriorityTotal = subtotal + (estimatedPriorityCents / 100)
+const selectedShippingCents = preferredShipping === "priority" ? estimatedPriorityCents : estimatedGroundCents
+const estimatedTotal = subtotal + (selectedShippingCents / 100)
 
 document.getElementById("subtotal").textContent = subtotal.toFixed(2)
 document.getElementById("estimated-weight").textContent = formatWeight(totalWeightOz)
 document.getElementById("estimated-ground").textContent = `$${(estimatedGroundCents / 100).toFixed(2)}`
 document.getElementById("estimated-priority").textContent = `$${(estimatedPriorityCents / 100).toFixed(2)}`
-document.getElementById("estimated-total-ground").textContent = estimatedGroundTotal.toFixed(2)
-document.getElementById("estimated-total-priority").textContent = estimatedPriorityTotal.toFixed(2)
+document.getElementById("estimated-total-selected").textContent = estimatedTotal.toFixed(2)
 }
 
 function updateQuantityAndRefresh(id, value){
@@ -395,7 +457,10 @@ method:"POST",
 headers:{
 "Content-Type":"application/json"
 },
-body:JSON.stringify({ items: cart })
+body:JSON.stringify({
+items: cart,
+preferredShippingMethod: preferredShipping
+})
 })
 
 const data = await res.json()
