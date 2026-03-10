@@ -1,1 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
 
+<title>Your Cart</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f5f5f5;
+margin:0;
+padding:30px;
+}
+
+.container{
+max-width:900px;
+margin:auto;
+background:white;
+padding:25px;
+border-radius:10px;
+}
+
+.item{
+display:flex;
+justify-content:space-between;
+align-items:center;
+border-bottom:1px solid #ddd;
+padding:10px 0;
+}
+
+button{
+padding:10px 14px;
+border:none;
+background:black;
+color:white;
+cursor:pointer;
+}
+
+.total{
+font-size:22px;
+font-weight:bold;
+margin-top:20px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Your Cart</h2>
+
+<div id="cart-items"></div>
+
+<div class="total">
+Subtotal: $<span id="subtotal">0</span>
+</div>
+
+<br>
+
+<button onclick="checkout()">Checkout</button>
+
+</div>
+
+<script src="/cart.js"></script>
+
+<script>
+
+let products=[]
+
+async function loadProducts(){
+
+const res = await fetch("/products.json")
+products = await res.json()
+
+renderCart()
+
+}
+
+function renderCart(){
+
+const cart = getCart()
+
+const container = document.getElementById("cart-items")
+
+container.innerHTML=""
+
+let subtotal = 0
+
+cart.forEach(item=>{
+
+const product = products.find(p=>p.id === item.id)
+
+if(!product) return
+
+subtotal += product.price * item.quantity
+
+const div = document.createElement("div")
+div.className="item"
+
+div.innerHTML=`
+<div>
+<b>${product.name}</b><br>
+$${product.price}
+</div>
+
+<div>
+
+<input
+type="number"
+value="${item.quantity}"
+min="1"
+onchange="updateQuantity('${item.id}', parseInt(this.value))"
+>
+
+<button onclick="removeFromCart('${item.id}')">Remove</button>
+
+</div>
+`
+
+container.appendChild(div)
+
+})
+
+document.getElementById("subtotal").textContent=subtotal.toFixed(2)
+
+}
+
+async function checkout(){
+
+const cart = getCart()
+
+const res = await fetch("/api/create-checkout-session",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json"
+},
+
+body:JSON.stringify({items:cart})
+
+})
+
+const data = await res.json()
+
+window.location = data.url
+
+}
+
+loadProducts()
+
+</script>
+
+</body>
+</html>
