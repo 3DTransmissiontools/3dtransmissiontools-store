@@ -331,6 +331,7 @@ color:#666;
 <h1>3D Transmission Tools</h1>
 <a href="/">Home</a>
 <a href="/shop.html">Shop</a>
+<a href="/cart.html">Cart (<span id="cart-count">0</span>)</a>
 </header>
 
 <div class="container">
@@ -373,6 +374,8 @@ color:#666;
 <div id="thumbnail-strip" class="thumbnail-strip"></div>
 </div>
 </div>
+
+<script src="/cart.js"></script>
 
 <script>
 let currentGallery = []
@@ -553,14 +556,19 @@ inputmode="numeric"
 </div>
 </div>
 
-<button class="buy-btn" onclick="buy('${safeId.replace(/'/g,"\\'")}')">
-Buy Now
+<button class="buy-btn" onclick="addProductToCart('${safeId.replace(/'/g,"\\'")}')">
+Add To Cart
 </button>
 `
 
 container.appendChild(card)
 
 })
+}
+
+function addProductToCart(id){
+const quantity = getQty(id)
+addToCart(id, quantity)
 }
 
 function openLightbox(encodedGallery,startIndex){
@@ -630,29 +638,6 @@ if(event.key==="ArrowRight") nextImage()
 document.getElementById("searchInput").addEventListener("input",applyFilters)
 document.getElementById("categoryFilter").addEventListener("change",applyFilters)
 document.getElementById("sortFilter").addEventListener("change",applyFilters)
-
-async function buy(id){
-
-const quantity = getQty(id)
-
-const res=await fetch("/api/create-checkout-session",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({
-id:id,
-quantity:quantity
-})
-})
-
-const data=await res.json()
-
-if(!res.ok){
-alert(data.error || "Checkout failed")
-return
-}
-
-window.location=data.url
-}
 
 loadProducts()
 </script>
