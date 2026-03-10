@@ -65,6 +65,12 @@ color:#555;
 font-size:14px;
 }
 
+.item-meta{
+color:#666;
+font-size:13px;
+margin-top:4px;
+}
+
 .item-actions{
 display:flex;
 align-items:center;
@@ -100,10 +106,24 @@ background:#777;
 background:#555;
 }
 
+.summary{
+margin-top:24px;
+padding-top:18px;
+border-top:1px solid #ddd;
+}
+
+.summary-row{
+display:flex;
+justify-content:space-between;
+align-items:center;
+gap:20px;
+margin:10px 0;
+font-size:16px;
+}
+
 .total{
 font-size:22px;
 font-weight:bold;
-margin-top:20px;
 }
 
 .actions{
@@ -124,6 +144,11 @@ margin-top:12px;
 font-size:14px;
 color:#666;
 }
+
+.estimate{
+color:#555;
+font-size:14px;
+}
 </style>
 
 </head>
@@ -141,8 +166,21 @@ color:#666;
 
 <div id="cart-items"></div>
 
-<div class="total">
-Subtotal: $<span id="subtotal">0.00</span>
+<div class="summary">
+  <div class="summary-row estimate">
+    <span>Estimated package weight:</span>
+    <span id="estimated-weight">0 oz</span>
+  </div>
+
+  <div class="summary-row estimate">
+    <span>Estimated USPS Ground Advantage:</span>
+    <span id="estimated-shipping">$0.00</span>
+  </div>
+
+  <div class="summary-row total">
+    <span>Subtotal:</span>
+    <span>$<span id="subtotal">0.00</span></span>
+  </div>
 </div>
 
 <div class="actions">
@@ -151,7 +189,7 @@ Subtotal: $<span id="subtotal">0.00</span>
 </div>
 
 <div class="note">
-Shipping and taxes are calculated at checkout.
+Shipping and taxes are finalized at checkout. Shipping shown here is an estimate based on product weight.
 </div>
 
 </div>
@@ -172,6 +210,40 @@ document.getElementById("cart-items").innerHTML = `<div class="empty">Unable to 
 }
 }
 
+function getWeightOz(product){
+const weight = Number(product.weight_oz)
+if(!Number.isFinite(weight) || weight <= 0){
+return 0
+}
+return weight
+}
+
+function getEstimatedShipping(totalWeightOz){
+if(totalWeightOz <= 0) return 0
+if(totalWeightOz <= 16) return 595
+if(totalWeightOz <= 32) return 895
+if(totalWeightOz <= 48) return 1195
+if(totalWeightOz <= 64) return 1495
+return 1895
+}
+
+function formatWeight(totalWeightOz){
+if(totalWeightOz <= 0) return "0 oz"
+
+if(totalWeightOz >= 16){
+const pounds = Math.floor(totalWeightOz / 16)
+const ounces = totalWeightOz % 16
+
+if(ounces === 0){
+return `${pounds} lb`
+}
+
+return `${pounds} lb ${ounces} oz`
+}
+
+return `${totalWeightOz} oz`
+}
+
 function renderCart(){
 const cart = getCart()
 const container = document.getElementById("cart-items")
@@ -179,10 +251,13 @@ const container = document.getElementById("cart-items")
 container.innerHTML = ""
 
 let subtotal = 0
+let totalWeightOz = 0
 
 if(!cart.length){
 container.innerHTML = `<div class="empty">Your cart is empty.</div>`
 document.getElementById("subtotal").textContent = "0.00"
+document.getElementById("estimated-weight").textContent = "0 oz"
+document.getElementById("estimated-shipping").textContent = "$0.00"
 return
 }
 
@@ -191,7 +266,12 @@ const product = products.find(p => p.id === item.id)
 
 if(!product) return
 
-subtotal += Number(product.price) * Number(item.quantity)
+const itemQty = Number(item.quantity) || 1
+const itemPrice = Number(product.price) || 0
+const itemWeight = getWeightOz(product)
+
+subtotal += itemPrice * itemQty
+totalWeightOz += itemWeight * itemQty
 
 const div = document.createElement("div")
 div.className = "item"
@@ -199,13 +279,14 @@ div.className = "item"
 div.innerHTML = `
 <div class="item-info">
 <div class="item-name">${product.name}</div>
-<div class="item-price">$${Number(product.price).toFixed(2)} each</div>
+<div class="item-price">$${itemPrice.toFixed(2)} each</div>
+<div class="item-meta">Weight: ${itemWeight} oz each</div>
 </div>
 
 <div class="item-actions">
 <input
 type="number"
-value="${item.quantity}"
+value="${itemQty}"
 min="1"
 max="${product.quantity ?? 99}"
 onchange="updateQuantityAndRefresh('${item.id}', this.value)"
@@ -217,7 +298,11 @@ onchange="updateQuantityAndRefresh('${item.id}', this.value)"
 container.appendChild(div)
 })
 
+const estimatedShippingCents = getEstimatedShipping(totalWeightOz)
+
 document.getElementById("subtotal").textContent = subtotal.toFixed(2)
+document.getElementById("estimated-weight").textContent = formatWeight(totalWeightOz)
+document.getElementById("estimated-shipping").textContent = `$${(estimatedShippingCents / 100).toFixed(2)}`
 }
 
 function updateQuantityAndRefresh(id, value){
