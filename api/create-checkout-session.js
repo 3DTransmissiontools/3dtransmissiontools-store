@@ -41,15 +41,25 @@ export default async function handler(req, res) {
 
       payment_method_types: ["card"],
 
+      automatic_tax: {
+        enabled: true
+      },
+
       line_items: [
         {
           price_data: {
+
             currency: "usd",
+
             unit_amount: Math.round(product.price * 100),
 
+            tax_behavior: "exclusive",
+
             product_data: {
-              name: product.name
+              name: product.name,
+              tax_code: "txcd_99999999"
             }
+
           },
 
           quantity: 1
