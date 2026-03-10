@@ -52,12 +52,14 @@ function getExpeditedShippingAmount(totalWeightOz) {
 }
 
 export default async function handler(req, res) {
+
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
-    const { items } = req.body || {};
+
+    const { items, preferredShippingMethod } = req.body || {};
 
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: "Cart is empty" });
@@ -65,21 +67,19 @@ export default async function handler(req, res) {
 
     const products = loadProducts();
     const line_items = [];
+
     let totalWeightOz = 0;
 
     for (const item of items) {
+
       if (!item || typeof item.id !== "string") {
         return res.status(400).json({ error: "Invalid cart item" });
       }
 
-      const product = products.find((p) => p.id === item.id);
+      const product = products.find(p => p.id === item.id);
 
       if (!product) {
         return res.status(404).json({ error: `Product not found: ${item.id}` });
-      }
-
-      if (typeof product.price !== "number" || product.price <= 0) {
-        return res.status(400).json({ error: `Invalid product price: ${product.name}` });
       }
 
       const availableStock =
@@ -107,65 +107,79 @@ export default async function handler(req, res) {
     const standardShippingAmount = getStandardShippingAmount(totalWeightOz);
     const expeditedShippingAmount = getExpeditedShippingAmount(totalWeightOz);
 
+    const defaultShipping =
+      preferredShippingMethod === "priority"
+        ? "priority"
+        : "ground";
+
+    const groundShipping = {
+      shipping_rate_data: {
+        type: "fixed_amount",
+        fixed_amount: {
+          amount: standardShippingAmount,
+          currency: "usd"
+        },
+        display_name: "USPS Ground Advantage",
+        delivery_estimate: {
+          minimum: { unit: "business_day", value: 3 },
+          maximum: { unit: "business_day", value: 6 }
+        }
+      }
+    };
+
+    const priorityShipping = {
+      shipping_rate_data: {
+        type: "fixed_amount",
+        fixed_amount: {
+          amount: expeditedShippingAmount,
+          currency: "usd"
+        },
+        display_name: "USPS Priority Mail",
+        delivery_estimate: {
+          minimum: { unit: "business_day", value: 1 },
+          maximum: { unit: "business_day", value: 3 }
+        }
+      }
+    };
+
+    const shipping_options =
+      defaultShipping === "priority"
+        ? [priorityShipping, groundShipping]
+        : [groundShipping, priorityShipping];
+
     const session = await stripe.checkout.sessions.create({
+
       mode: "payment",
+
       payment_method_types: ["card"],
+
+      automatic_tax: {
+        enabled: true
+      },
+
+      billing_address_collection: "required",
+
       line_items,
 
       shipping_address_collection: {
         allowed_countries: ["US"]
       },
 
-      shipping_options: [
-        {
-          shipping_rate_data: {
-            type: "fixed_amount",
-            fixed_amount: {
-              amount: standardShippingAmount,
-              currency: "usd"
-            },
-            display_name: "USPS Ground Advantage",
-            delivery_estimate: {
-              minimum: {
-                unit: "business_day",
-                value: 3
-              },
-              maximum: {
-                unit: "business_day",
-                value: 6
-              }
-            }
-          }
-        },
-        {
-          shipping_rate_data: {
-            type: "fixed_amount",
-            fixed_amount: {
-              amount: expeditedShippingAmount,
-              currency: "usd"
-            },
-            display_name: "USPS Priority Mail",
-            delivery_estimate: {
-              minimum: {
-                unit: "business_day",
-                value: 1
-              },
-              maximum: {
-                unit: "business_day",
-                value: 3
-              }
-            }
-          }
-        }
-      ],
+      shipping_options,
 
       success_url: "https://3dtransmissiontools.com/success.html",
+
       cancel_url: "https://3dtransmissiontools.com/cancel.html"
+
     });
 
     return res.status(200).json({ url: session.url });
+
   } catch (error) {
+
     console.error("Stripe checkout error:", error);
+
     return res.status(500).json({ error: error.message });
+
   }
 }
