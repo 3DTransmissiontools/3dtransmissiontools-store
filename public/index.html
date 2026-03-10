@@ -342,6 +342,7 @@ background:#ddd;
 <nav>
 <a href="/">Home</a>
 <a href="/shop.html">Shop</a>
+<a href="/cart.html">Cart (<span id="cart-count">0</span>)</a>
 </nav>
 
 </div>
@@ -389,6 +390,8 @@ Built to help make service work faster, easier, and more repeatable.
     <div id="thumbnail-strip" class="thumbnail-strip"></div>
   </div>
 </div>
+
+<script src="/cart.js"></script>
 
 <script>
 let currentGallery = []
@@ -495,8 +498,8 @@ inputmode="numeric"
 </div>
 </div>
 
-<button class="buy-btn" onclick="buy('${safeId.replace(/'/g,"\\'")}')">
-Buy Now
+<button class="buy-btn" onclick="addProductToCart('${safeId.replace(/'/g,"\\'")}')">
+Add To Cart
 </button>
 </div>
 `
@@ -505,6 +508,11 @@ container.appendChild(card)
 
 })
 
+}
+
+function addProductToCart(id){
+const quantity = getQty(id)
+addToCart(id, quantity)
 }
 
 function openLightbox(encodedGallery, startIndex){
@@ -570,30 +578,6 @@ if(event.key === "Escape") closeLightbox()
 if(event.key === "ArrowLeft") prevImage()
 if(event.key === "ArrowRight") nextImage()
 })
-
-async function buy(id){
-
-const quantity = getQty(id)
-
-const res = await fetch("/api/create-checkout-session",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({
-id:id,
-quantity:quantity
-})
-})
-
-const data = await res.json()
-
-if(!res.ok){
-alert(data.error || "Checkout failed")
-return
-}
-
-window.location = data.url
-
-}
 
 loadProducts()
 </script>
