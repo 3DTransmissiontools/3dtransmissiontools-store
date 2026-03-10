@@ -1,16 +1,4 @@
 [
-  {
-"id":"test1",
-"name":"TEST PAYMENT – $1",
-"price":1.00,
-"quantity":10,
-"currency":"USD",
-"category":"Test",
-"description":"Temporary product to test Stripe checkout.",
-"images":[
-"https://dummyimage.com/600x600/000/fff&text=Test+Payment"
-]
-},
 {
 "id":"2",
 "name":"6L80 6L90 Automatic Transmission Input Shaft Teflon Ring Installation Tool",
