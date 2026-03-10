@@ -1,3 +1,4 @@
+:contentReference[oaicite:0]{index=0}
 [
 {
 "id":"2",
@@ -7,9 +8,9 @@
 "currency":"USD",
 "category":"6L",
 "description":"Installation tool set for 6L80 and 6L90 input shaft Teflon rings.",
-"images": [
-  "https://i.ebayimg.com/images/g/80EAAOSw17Rnn-nH/s-l1600.webp",
-  "https://i.ebayimg.com/images/g/5dIAAOSwXdJnn-nH/s-l1600.webp"
+"images":[
+"https://i.ebayimg.com/images/g/80EAAOSw17Rnn-nH/s-l1600.webp",
+"https://i.ebayimg.com/images/g/5dIAAOSwXdJnn-nH/s-l1600.webp"
 ]
 },
 {
@@ -20,9 +21,9 @@
 "currency":"USD",
 "category":"4L60E",
 "description":"Harness removal tool set for several GM and Allison transmissions.",
-"images": [
-  "https://i.ebayimg.com/images/g/ZH8AAOSw9bhn2zsq/s-l1600.webp",
-  "https://i.ebayimg.com/images/g/irQAAOSwGadn2zs1/s-l1600.webp"
+"images":[
+"https://i.ebayimg.com/images/g/ZH8AAOSw9bhn2zsq/s-l1600.webp",
+"https://i.ebayimg.com/images/g/irQAAOSwGadn2zs1/s-l1600.webp"
 ]
 },
 {
@@ -33,8 +34,8 @@
 "currency":"USD",
 "category":"8L",
 "description":"Ring installer set for GM 8L90 transmission service.",
-"image": [
-  "https://i.ebayimg.com/images/g/8EMAAOSwVABn5H9x/s-l1600.webp"
+"images":[
+"https://i.ebayimg.com/images/g/8EMAAOSwVABn5H9x/s-l1600.webp"
 ]
 },
 {
@@ -45,9 +46,9 @@
 "currency":"USD",
 "category":"4L60E",
 "description":"Pump stator ring installer and resizer for 4L60E transmissions.",
-"images": [
-  "https://i.ebayimg.com/images/g/NYQAAOSwgOxoLimC/s-l1600.webp",
-  "https://i.ebayimg.com/images/g/9joAAOSwKktoLimC/s-l1600.webp"
+"images":[
+"https://i.ebayimg.com/images/g/NYQAAOSwgOxoLimC/s-l1600.webp",
+"https://i.ebayimg.com/images/g/9joAAOSwKktoLimC/s-l1600.webp"
 ]
 },
 {
@@ -58,9 +59,9 @@
 "currency":"USD",
 "category":"8L",
 "description":"Tool for disconnecting the 8L90 case connector harness.",
-"images": [
-  "https://i.ebayimg.com/images/g/GoMAAOSwI25oM4DU/s-l1600.webp",
-  "https://i.ebayimg.com/images/g/8LkAAOSwreZoM4DW/s-l1600.webp"
+"images":[
+"https://i.ebayimg.com/images/g/GoMAAOSwI25oM4DU/s-l1600.webp",
+"https://i.ebayimg.com/images/g/8LkAAOSwreZoM4DW/s-l1600.webp"
 ]
 },
 {
@@ -71,10 +72,10 @@
 "currency":"USD",
 "category":"10R/10L",
 "description":"Harness connector removal tool for Ford 10R80 transmissions.",
-"images": [
-  "https://i.ebayimg.com/images/g/nKMAAOSw3~xoN~iQ/s-l1600.webp",
-  "https://i.ebayimg.com/images/g/Ne0AAOSwhKJoN~iY/s-l1600.webp",
-  "https://i.ebayimg.com/images/g/4F0AAOSwlcxoN~ii/s-l1600.webp"
+"images":[
+"https://i.ebayimg.com/images/g/nKMAAOSw3~xoN~iQ/s-l1600.webp",
+"https://i.ebayimg.com/images/g/Ne0AAOSwhKJoN~iY/s-l1600.webp",
+"https://i.ebayimg.com/images/g/4F0AAOSwlcxoN~ii/s-l1600.webp"
 ]
 },
 {
@@ -85,8 +86,8 @@
 "currency":"USD",
 "category":"Allison",
 "description":"Air test checker tool for Allison transmissions.",
-"image": [
-  "https://i.ebayimg.com/images/g/7y4AAOSwJmBoRK~W/s-l1600.webp"
+"images":[
+"https://i.ebayimg.com/images/g/7y4AAOSwJmBoRK~W/s-l1600.webp"
 ]
 },
 {
@@ -97,9 +98,9 @@
 "currency":"USD",
 "category":"10R/10L",
 "description":"Resize and install tool set for 10R80 and 10L90 transmissions.",
-"images": [
-  "https://i.ebayimg.com/images/g/hJ0AAOSwnDxoH81j/s-l1600.webp",
-  "https://i.ebayimg.com/images/g/txUAAOSwByJoH81r/s-l1600.webp"
+"images":[
+"https://i.ebayimg.com/images/g/hJ0AAOSwnDxoH81j/s-l1600.webp",
+"https://i.ebayimg.com/images/g/txUAAOSwByJoH81r/s-l1600.webp"
 ]
 },
 {
@@ -110,11 +111,11 @@
 "currency":"USD",
 "category":"4L60E",
 "description":"Installer and resizer set for 4L60E pump stator rings.",
-"images": [
-  "https://i.ebayimg.com/images/g/AEcAAeSwVMBoibub/s-l1600.webp",
-  "https://i.ebayimg.com/images/g/NYQAAOSwgOxoLimC/s-l1600.webp",
-  "https://i.ebayimg.com/images/g/9joAAOSwKktoLimC/s-l1600.webp",
-  "https://i.ebayimg.com/images/g/4~YAAeSwYE9oibui/s-l1600.webp"
+"images":[
+"https://i.ebayimg.com/images/g/AEcAAeSwVMBoibub/s-l1600.webp",
+"https://i.ebayimg.com/images/g/NYQAAOSwgOxoLimC/s-l1600.webp",
+"https://i.ebayimg.com/images/g/9joAAOSwKktoLimC/s-l1600.webp",
+"https://i.ebayimg.com/images/g/4~YAAeSwYE9oibui/s-l1600.webp"
 ]
 },
 {
@@ -125,9 +126,9 @@
 "currency":"USD",
 "category":"6L",
 "description":"Input shaft Teflon ring sizing and installation tool.",
-"images": [
-  "https://i.ebayimg.com/images/g/Zl0AAeSwl2NoixGH/s-l1600.webp",
-  "https://i.ebayimg.com/images/g/U98AAeSwnqloixGP/s-l1600.webp"
+"images":[
+"https://i.ebayimg.com/images/g/Zl0AAeSwl2NoixGH/s-l1600.webp",
+"https://i.ebayimg.com/images/g/U98AAeSwnqloixGP/s-l1600.webp"
 ]
 },
 {
@@ -138,8 +139,8 @@
 "currency":"USD",
 "category":"4L60E",
 "description":"Installer set for input shaft rings.",
-"image": [
-  "https://i.ebayimg.com/images/g/8AwAAeSwABJokFRL/s-l1600.webp"
+"images":[
+"https://i.ebayimg.com/images/g/8AwAAeSwABJokFRL/s-l1600.webp"
 ]
 },
 {
@@ -150,9 +151,9 @@
 "currency":"USD",
 "category":"6T/6F",
 "description":"Teflon ring installation tool set for multiple transmissions.",
-"images": [
-  "https://i.ebayimg.com/images/g/8goAAeSwgvJor1ky/s-l1600.webp",
-  "https://i.ebayimg.com/images/g/6e8AAeSweShor1ky/s-l1600.webp"
+"images":[
+"https://i.ebayimg.com/images/g/8goAAeSwgvJor1ky/s-l1600.webp",
+"https://i.ebayimg.com/images/g/6e8AAeSweShor1ky/s-l1600.webp"
 ]
 },
 {
@@ -163,11 +164,11 @@
 "currency":"USD",
 "category":"8F",
 "description":"Ring sizing tool and chain retainer for 8F35 transmissions.",
-"images": [
-  "https://i.ebayimg.com/images/g/W9oAAeSweAVo7qIo/s-l1600.webp",
-  "https://i.ebayimg.com/images/g/zkYAAeSwNyto7qIu/s-l1600.webp",
-  "https://i.ebayimg.com/images/g/oMoAAeSwkNFo8HQY/s-l1600.webp",
-  "https://i.ebayimg.com/images/g/LEgAAeSwnudo8HQj/s-l1600.webp"
+"images":[
+"https://i.ebayimg.com/images/g/W9oAAeSweAVo7qIo/s-l1600.webp",
+"https://i.ebayimg.com/images/g/zkYAAeSwNyto7qIu/s-l1600.webp",
+"https://i.ebayimg.com/images/g/oMoAAeSwkNFo8HQY/s-l1600.webp",
+"https://i.ebayimg.com/images/g/LEgAAeSwnudo8HQj/s-l1600.webp"
 ]
 },
 {
@@ -178,76 +179,9 @@
 "currency":"USD",
 "category":"4L80E",
 "description":"Aluminum accumulator block off plate for 4L80E.",
-"images": [
-  "https://i.ebayimg.com/images/g/WowAAeSw3GJpMKO0/s-l1600.webp",
-  "https://i.ebayimg.com/images/g/hgMAAeSwcxppMKd9/s-l1600.webp"
-]
-},
-{
-"id":"16",
-"name":"B&M 6L80 Deep Transmission Pan",
-"price":240.00,
-"quantity":4,
-"currency":"USD",
-"category":"6L",
-"description":"Deep transmission pan for GM 6L80 trucks and SUVs.",
-"images": [
-  "https://i.ebayimg.com/images/g/3sEAAeSwKyFpONKa/s-l1600.webp",
-  "https://i.ebayimg.com/images/g/1OMAAeSwYlxpONKa/s-l1600.webp"
-]
-},
-{
-"id":"17",
-"name":"10L1000 Ring Sizing Tool",
-"price":125.00,
-"quantity":5,
-"currency":"USD",
-"category":"10L1000",
-"description":"Ring sizing tool for GM 10L1000 transmission.",
-"images": [
-  "https://i.ebayimg.com/images/g/bvIAAeSw23NpYuvy/s-l1600.webp",
-  "https://i.ebayimg.com/images/g/mDYAAeSwQWtpYuwU/s-l1600.webp"
-]
-},
-{
-"id":"18",
-"name":"4L80E Center Support Ring Installation And Sizing Tool Kit",
-"price":45.00,
-"quantity":10,
-"currency":"USD",
-"category":"4L80E",
-"description":"Installation and sizing kit for 4L80E center support rings.",
-"images": [
-  "https://i.ebayimg.com/images/g/IJIAAeSwemNpgZjl/s-l1600.webp",
-  "https://i.ebayimg.com/images/g/3iQAAeSwhd9pgZjr/s-l1600.webp"
-]
-},
-{
-"id":"19",
-"name":"4L80E Input Shaft Ring Installer Set",
-"price":45.00,
-"quantity":5,
-"currency":"USD",
-"category":"4L80E",
-"description":"Installer set for 4L80E input shaft rings.",
-"images": [
-  "https://i.ebayimg.com/images/g/0QoAAOSw1u9n5EVT/s-l1600.webp",
-  "https://i.ebayimg.com/images/g/R2YAAOSw0d5n5EVT/s-l1600.webp",
-  "https://i.ebayimg.com/images/g/A6UAAOSwC3tn5EVT/s-l1600.webp"
-]
-},
-{
-"id":"20",
-"name":"4L60E 700R4 Lip Seal Protector Piston Installer",
-"price":50.00,
-"quantity":4,
-"currency":"USD",
-"category":"4L60E",
-"description":"Lip seal protector piston installer for 4L60E and 700R4.",
-"images": [
-  "https://i.ebayimg.com/images/g/GdAAAeSwzl1pncka/s-l1600.webp",
-  "https://i.ebayimg.com/images/g/S7wAAeSwwYxprwqx/s-l1600.webp",
-  "https://i.ebayimg.com/images/g/8R0AAeSwFWNprwq~/s-l1600.webp"
+"images":[
+"https://i.ebayimg.com/images/g/WowAAeSw3GJpMKO0/s-l1600.webp",
+"https://i.ebayimg.com/images/g/hgMAAeSwcxppMKd9/s-l1600.webp"
 ]
 }
 ]
