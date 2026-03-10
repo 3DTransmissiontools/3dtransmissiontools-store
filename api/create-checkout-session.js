@@ -33,46 +33,53 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { id, quantity } = req.body;
+    const { items } = req.body || {};
 
-    if (!id || typeof id !== "string") {
-      return res.status(400).json({ error: "Missing or invalid product id" });
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: "Cart is empty" });
     }
 
     const products = loadProducts();
-    const product = products.find((p) => p.id === id);
+    const line_items = [];
 
-    if (!product) {
-      return res.status(404).json({ error: "Product not found" });
+    for (const item of items) {
+      if (!item || typeof item.id !== "string") {
+        return res.status(400).json({ error: "Invalid cart item" });
+      }
+
+      const product = products.find((p) => p.id === item.id);
+
+      if (!product) {
+        return res.status(404).json({ error: `Product not found: ${item.id}` });
+      }
+
+      if (typeof product.price !== "number" || product.price <= 0) {
+        return res.status(400).json({ error: `Invalid product price: ${product.name}` });
+      }
+
+      const availableStock =
+        Number.isFinite(Number(product.quantity)) && Number(product.quantity) > 0
+          ? Number(product.quantity)
+          : 99;
+
+      const safeQuantity = getValidQuantity(item.quantity, availableStock);
+
+      line_items.push({
+        price_data: {
+          currency: "usd",
+          unit_amount: Math.round(product.price * 100),
+          product_data: {
+            name: product.name
+          }
+        },
+        quantity: safeQuantity
+      });
     }
-
-    if (typeof product.price !== "number" || product.price <= 0) {
-      return res.status(400).json({ error: "Invalid product price" });
-    }
-
-    const availableStock =
-      Number.isFinite(Number(product.quantity)) && Number(product.quantity) > 0
-        ? Number(product.quantity)
-        : 99;
-
-    const safeQuantity = getValidQuantity(quantity, availableStock);
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
-
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            unit_amount: Math.round(product.price * 100),
-            product_data: {
-              name: product.name
-            }
-          },
-          quantity: safeQuantity
-        }
-      ],
+      line_items,
 
       shipping_address_collection: {
         allowed_countries: ["US"]
