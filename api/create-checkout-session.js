@@ -10,13 +10,30 @@ function loadProducts() {
   return JSON.parse(fileContents);
 }
 
+function getValidQuantity(value, maxStock = 99) {
+  const parsed = parseInt(value, 10);
+
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    return 1;
+  }
+
+  const safeMax = Math.min(
+    99,
+    Number.isFinite(Number(maxStock)) && Number(maxStock) > 0
+      ? Number(maxStock)
+      : 99
+  );
+
+  return Math.min(parsed, safeMax);
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
-    const { id } = req.body;
+    const { id, quantity } = req.body;
 
     if (!id || typeof id !== "string") {
       return res.status(400).json({ error: "Missing or invalid product id" });
@@ -33,6 +50,13 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Invalid product price" });
     }
 
+    const availableStock =
+      Number.isFinite(Number(product.quantity)) && Number(product.quantity) > 0
+        ? Number(product.quantity)
+        : 99;
+
+    const safeQuantity = getValidQuantity(quantity, availableStock);
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
@@ -46,13 +70,56 @@ export default async function handler(req, res) {
               name: product.name
             }
           },
-          quantity: 1
+          quantity: safeQuantity
         }
       ],
 
       shipping_address_collection: {
         allowed_countries: ["US"]
       },
+
+      shipping_options: [
+        {
+          shipping_rate_data: {
+            type: "fixed_amount",
+            fixed_amount: {
+              amount: 695,
+              currency: "usd"
+            },
+            display_name: "Standard Shipping",
+            delivery_estimate: {
+              minimum: {
+                unit: "business_day",
+                value: 5
+              },
+              maximum: {
+                unit: "business_day",
+                value: 7
+              }
+            }
+          }
+        },
+        {
+          shipping_rate_data: {
+            type: "fixed_amount",
+            fixed_amount: {
+              amount: 1895,
+              currency: "usd"
+            },
+            display_name: "Expedited Shipping",
+            delivery_estimate: {
+              minimum: {
+                unit: "business_day",
+                value: 2
+              },
+              maximum: {
+                unit: "business_day",
+                value: 3
+              }
+            }
+          }
+        }
+      ],
 
       success_url: "https://3dtransmissiontools.com/success.html",
       cancel_url: "https://3dtransmissiontools.com/cancel.html"
