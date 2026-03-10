@@ -11,13 +11,11 @@ function loadProducts() {
 }
 
 export default async function handler(req, res) {
-
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
-
     const { id } = req.body;
 
     if (!id || typeof id !== "string") {
@@ -25,7 +23,7 @@ export default async function handler(req, res) {
     }
 
     const products = loadProducts();
-    const product = products.find(p => p.id === id);
+    const product = products.find((p) => p.id === id);
 
     if (!product) {
       return res.status(404).json({ error: "Product not found" });
@@ -36,32 +34,18 @@ export default async function handler(req, res) {
     }
 
     const session = await stripe.checkout.sessions.create({
-
       mode: "payment",
-
       payment_method_types: ["card"],
-
-      automatic_tax: {
-        enabled: true
-      },
 
       line_items: [
         {
           price_data: {
-
             currency: "usd",
-
             unit_amount: Math.round(product.price * 100),
-
-            tax_behavior: "exclusive",
-
             product_data: {
-              name: product.name,
-              tax_code: "txcd_99999999"
+              name: product.name
             }
-
           },
-
           quantity: 1
         }
       ],
@@ -72,19 +56,11 @@ export default async function handler(req, res) {
 
       success_url: "https://3dtransmissiontools.com/success.html",
       cancel_url: "https://3dtransmissiontools.com/cancel.html"
-
     });
 
     return res.status(200).json({ url: session.url });
-
   } catch (error) {
-
     console.error("Stripe checkout error:", error);
-
-    return res.status(500).json({
-      error: error.message
-    });
-
+    return res.status(500).json({ error: error.message });
   }
-
 }
