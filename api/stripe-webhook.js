@@ -33,6 +33,16 @@ if (event.type === "checkout.session.completed") {
 
 const session = event.data.object;
 
+const lineItems = await stripe.checkout.sessions.listLineItems(
+session.id
+);
+
+const items = lineItems.data.map(item => ({
+name: item.description,
+quantity: item.quantity,
+price: item.amount_total / 100
+}));
+
 const order = {
 id: session.id,
 date: new Date().toISOString(),
@@ -44,6 +54,7 @@ tax: session.total_details?.amount_tax
 shipping_method: session.shipping_cost?.shipping_rate || "unknown",
 shipping_address: session.customer_details?.address || {},
 payment_status: session.payment_status,
+items,
 shipped: false,
 tracking: ""
 };
@@ -53,9 +64,7 @@ const ordersFile = path.join(process.cwd(), "api", "orders-data.json");
 let orders = [];
 
 if (fs.existsSync(ordersFile)) {
-
 orders = JSON.parse(fs.readFileSync(ordersFile));
-
 }
 
 orders.unshift(order);
