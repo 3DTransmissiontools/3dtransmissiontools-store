@@ -10,8 +10,59 @@ body{
 font-family:Arial, sans-serif;
 background:#f5f5f5;
 margin:0;
-padding:30px;
 color:#111;
+}
+
+.site-header{
+background:#111;
+}
+
+.banner{
+width:100%;
+background:#000;
+margin:0;
+padding:0;
+}
+
+.banner img{
+display:block;
+width:100%;
+height:auto;
+max-height:none;
+}
+
+.sticky-nav{
+position:sticky;
+top:0;
+z-index:1000;
+background:#111;
+border-top:1px solid #222;
+border-bottom:1px solid #222;
+}
+
+.nav-inner{
+max-width:1200px;
+margin:auto;
+display:flex;
+align-items:center;
+justify-content:center;
+gap:28px;
+padding:14px 20px;
+flex-wrap:wrap;
+}
+
+.nav-inner a{
+color:white;
+text-decoration:none;
+font-weight:bold;
+}
+
+.nav-inner a:hover{
+text-decoration:underline;
+}
+
+.page-wrap{
+padding:30px;
 }
 
 .container{
@@ -207,12 +258,36 @@ font-size:13px;
 color:#666;
 margin-top:3px;
 }
+
+@media (max-width:700px){
+.nav-inner{
+gap:18px;
+padding:12px 16px;
+}
+.page-wrap{
+padding:20px;
+}
+}
 </style>
 
 </head>
 
 <body>
 
+<header class="site-header">
+  <div class="banner">
+    <img src="/logo.png" alt="3D Transmission Tools Banner">
+  </div>
+  <nav class="sticky-nav">
+    <div class="nav-inner">
+      <a href="/">Home</a>
+      <a href="/shop.html">Shop</a>
+      <a href="/cart.html">Cart (<span id="cart-count">0</span>)</a>
+    </div>
+  </nav>
+</header>
+
+<div class="page-wrap">
 <div class="container">
 
 <div class="top-links">
@@ -276,6 +351,7 @@ margin-top:3px;
 Shipping and taxes are finalized at checkout. The total shown here includes subtotal plus your selected shipping estimate, but not tax.
 </div>
 
+</div>
 </div>
 
 <script src="/cart.js"></script>
