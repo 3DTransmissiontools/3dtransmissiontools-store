@@ -18,13 +18,17 @@ margin:0;
 padding:0;
 line-height:0;
 overflow:hidden;
+display:block;
 }
 
 .banner img{
 display:block;
 width:100%;
 height:auto;
+max-width:100%;
 margin:0;
+padding:0;
+border:0;
 }
 
 .sticky-nav{
