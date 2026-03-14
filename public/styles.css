@@ -21,7 +21,7 @@ padding:0;
 display:block;
 width:100%;
 height:auto;
-max-height:120px;
+max-height:180px;
 object-fit:contain;
 }
 
@@ -666,6 +666,6 @@ width:100%;
 }
 
 .banner img{
-max-height:90px;
+max-height:120px;
 }
 }
