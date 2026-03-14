@@ -26,11 +26,11 @@ line-height:0;
 .banner img{
 display:block;
 width:100%;
-height:auto;
-max-height:none;
+height:140px;
 object-fit:contain;
 object-position:center;
 margin:0;
+background:#000;
 }
 
 .sticky-nav{
@@ -672,5 +672,9 @@ align-items:flex-start;
 
 .item-actions{
 width:100%;
+}
+
+.banner img{
+height:100px;
 }
 }
