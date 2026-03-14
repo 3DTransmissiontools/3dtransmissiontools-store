@@ -1,22 +1,169 @@
-:root {
-  --banner-height: 32px;
-}
+<!-- /public/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Transmission Tools | Precision Tools for Transmission Builders</title>
+  <meta
+    name="description"
+    content="3D Transmission Tools designs practical tools for transmission builders, hobbyists, and shops. Shop precision tools built for real transmission work."
+  />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body data-page="home">
+  <div class="site-banner" id="site-banner">
+    <div class="site-banner__inner">
+      <p>
+        New: weight-based shipping is now live at checkout • Tax calculated in Stripe Checkout • Built for real-world transmission work
+      </p>
+      <button
+        class="site-banner__close"
+        id="banner-close"
+        type="button"
+        aria-label="Close announcement banner"
+      >
+        ×
+      </button>
+    </div>
+  </div>
 
-.site-banner {
-  min-height: var(--banner-height);
-}
+  <header class="site-header" id="site-header">
+    <div class="nav-shell">
+      <a class="brand" href="/index.html" aria-label="3D Transmission Tools home">
+        <span class="brand__mark">3D</span>
+        <span class="brand__text">Transmission Tools</span>
+      </a>
 
-.site-banner__inner {
-  min-height: var(--banner-height);
-}
+      <button
+        class="nav-toggle"
+        id="nav-toggle"
+        type="button"
+        aria-expanded="false"
+        aria-controls="site-nav"
+        aria-label="Open navigation"
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
 
-.site-banner p {
-  font-size: 12px;
-  line-height: 1.2;
-  margin: 0;
-}
+      <nav class="site-nav" id="site-nav" aria-label="Main navigation">
+        <a href="/index.html" class="nav-link is-active">Home</a>
+        <a href="/shop.html" class="nav-link">Shop</a>
+        <a href="/cart.html" class="nav-link nav-link--cart">
+          Cart
+          <span class="cart-badge" id="cart-count" aria-live="polite">0</span>
+        </a>
+      </nav>
+    </div>
+  </header>
 
-.site-banner__close {
-  font-size: 14px;
-  padding: 2px 6px;
-}
+  <main>
+    <section class="hero">
+      <div class="container hero__grid">
+        <div class="hero__content">
+          <span class="eyebrow">Purpose-built tooling</span>
+          <h1>Precision tools for transmission builders who want parts to fit right the first time.</h1>
+          <p class="hero__copy">
+            3D Transmission Tools creates practical shop tools for builders, rebuilders, and serious DIYers. Designed around real transmission work, shipped with simple checkout and weight-based rates.
+          </p>
+          <div class="hero__actions">
+            <a class="btn btn--primary" href="/shop.html">Shop Tools</a>
+            <a class="btn btn--secondary" href="#why-us">Why Builders Choose Us</a>
+          </div>
+          <div class="hero__stats">
+            <div class="stat-card">
+              <strong>Fast checkout</strong>
+              <span>Stripe Checkout with tax enabled</span>
+            </div>
+            <div class="stat-card">
+              <strong>Fair shipping</strong>
+              <span>Weight-based USPS-style rates</span>
+            </div>
+            <div class="stat-card">
+              <strong>Built for use</strong>
+              <span>Tools made for working transmission builders</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero__panel">
+          <div class="panel-card">
+            <span class="panel-card__label">What you can expect</span>
+            <ul class="check-list">
+              <li>Clean product pages and cart flow</li>
+              <li>Quantity selection before checkout</li>
+              <li>Straightforward shipping costs</li>
+              <li>Secure Stripe payment processing</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="why-us">
+      <div class="container">
+        <div class="section-heading">
+          <span class="eyebrow">Why 3D Transmission Tools</span>
+          <h2>Simple, durable, no-fluff tools for real transmission work.</h2>
+          <p>
+            The goal is straightforward: offer useful tools that solve actual shop problems without overcomplicating the buying process.
+          </p>
+        </div>
+
+        <div class="feature-grid">
+          <article class="feature-card">
+            <h3>Designed for practical use</h3>
+            <p>
+              Built around hands-on transmission work, with function first and clean fitment in mind.
+            </p>
+          </article>
+          <article class="feature-card">
+            <h3>Easy online ordering</h3>
+            <p>
+              Add products to cart, adjust quantity, and finish checkout through Stripe with taxes handled automatically.
+            </p>
+          </article>
+          <article class="feature-card">
+            <h3>Shipping that makes sense</h3>
+            <p>
+              Weight-based rates keep costs aligned with what you actually order instead of flat overcharging.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section--alt">
+      <div class="container cta-strip">
+        <div>
+          <span class="eyebrow">Ready to order?</span>
+          <h2>Browse the shop and add your tools to cart.</h2>
+          <p>Consistent site-wide banner, sticky nav, and cart access on every page.</p>
+        </div>
+        <a class="btn btn--primary" href="/shop.html">Go to Shop</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer__row">
+      <p>© 2026 3D Transmission Tools. All rights reserved.</p>
+      <nav class="footer-nav" aria-label="Footer navigation">
+        <a href="/index.html">Home</a>
+        <a href="/shop.html">Shop</a>
+        <a href="/cart.html">Cart</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script src="/site.js"></script>
+</body>
+</html>
