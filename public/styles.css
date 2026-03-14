@@ -27,8 +27,8 @@ line-height:0;
 display:block;
 width:100%;
 height:auto;
-max-height:260px;
-object-fit:cover;
+max-height:none;
+object-fit:contain;
 object-position:center;
 margin:0;
 }
@@ -672,9 +672,5 @@ align-items:flex-start;
 
 .item-actions{
 width:100%;
-}
-
-.banner img{
-max-height:180px;
 }
 }
