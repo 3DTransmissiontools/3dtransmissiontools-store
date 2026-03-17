@@ -27,7 +27,7 @@ padding:0;
 line-height:0;
 display:flex;
 justify-content:center;
-max-height:160px;   /* 👈 THIS IS THE FINAL TWEAK */
+max-height:140px;   /* 👈 THIS IS THE FINAL TWEAK */
 overflow:hidden;
 }
 
