@@ -17,17 +17,15 @@ background:#000;
 margin:0;
 padding:0;
 line-height:0;
-overflow:hidden;
 display:flex;
 justify-content:center;
 }
 
 .banner img{
 display:block;
-height:180px;
-width:auto;
-max-width:100%;
-object-fit:contain;
+width:100%;
+max-width:1600px;
+height:auto;
 margin:0 auto;
 }
 
