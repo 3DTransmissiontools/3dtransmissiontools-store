@@ -24,7 +24,7 @@ justify-content:center;
 .banner img{
 display:block;
 width:100%;
-max-width:1200px;   /* 👈 THIS IS THE FIX */
+max-width:1000px;   /* 👈 THIS IS THE FIX */
 height:auto;
 margin:0 auto;
 }
