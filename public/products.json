@@ -272,7 +272,7 @@
   {
     "id": "21",
     "name": "Transmission End Play Tool H gauge Universal Clearance Gauge T-0030-A",
-    "price": 125,
+    "price": 125.0,
     "quantity": 4,
     "weight_oz": 18,
     "currency": "USD",
@@ -284,3 +284,4 @@
       "https://i.ebayimg.com/images/g/fuQAAeSwh91p0~~m/s-l1600.webp"
     ]
   }
+]
