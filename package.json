@@ -2,6 +2,7 @@
   "name": "3dtransmissiontools-store",
   "private": true,
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "stripe": "^16.0.0"
   }
 }
