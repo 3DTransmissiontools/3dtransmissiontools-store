@@ -118,9 +118,9 @@ const container = document.getElementById("products")
 // 🔥 CHANGE FEATURED PRODUCTS HERE
 const featuredIds = ["21", "17", "9", "4"]
 
-const featuredProducts = products.filter(product =>
-featuredIds.includes(String(product.id))
-)
+const featuredProducts = featuredIds
+  .map(id => products.find(p => String(p.id) === id))
+  .filter(Boolean)
 
 featuredProducts.forEach(product=>{
 const card=document.createElement("div")
