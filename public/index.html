@@ -1,4 +1,3 @@
-<!-- /public/index.html -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -12,6 +11,7 @@
 </script>
 <script defer src="/_vercel/insights/script.js"></script>
 </head>
+
 <body>
 
 <header class="site-header">
@@ -114,7 +114,13 @@ async function loadProducts(){
 const res = await fetch("products.json")
 const products = await res.json()
 const container = document.getElementById("products")
-const featuredProducts = products.slice(0,4)
+
+// 🔥 CHANGE FEATURED PRODUCTS HERE
+const featuredIds = ["21", "17", "9", "4"]
+
+const featuredProducts = products.filter(product =>
+featuredIds.includes(String(product.id))
+)
 
 featuredProducts.forEach(product=>{
 const card=document.createElement("div")
@@ -176,6 +182,11 @@ container.appendChild(card)
 function addProductToCart(id){
 const quantity = getQty(id)
 addToCart(id, quantity)
+
+va('event', {
+  name: 'add_to_cart',
+  data: { product_id: id }
+})
 }
 
 function openLightbox(encodedGallery, startIndex){
@@ -184,6 +195,10 @@ currentImageIndex = startIndex || 0
 updateLightboxImage()
 renderThumbnails()
 document.getElementById("lightbox").classList.add("show")
+
+va('event', {
+  name: 'product_view'
+})
 }
 
 function updateLightboxImage(){
