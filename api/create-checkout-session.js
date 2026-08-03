@@ -2,7 +2,15 @@ import Stripe from "stripe";
 import fs from "fs";
 import path from "path";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+function getStripe() {
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+
+  if (!secretKey) {
+    return null;
+  }
+
+  return new Stripe(secretKey);
+}
 
 function loadProducts() {
   const filePath = path.join(
@@ -19,6 +27,37 @@ function loadProducts() {
   }
 
   return products;
+}
+
+function getSiteUrl(req) {
+  const configuredSiteUrl =
+    process.env.SITE_URL?.trim();
+
+  if (configuredSiteUrl) {
+    return configuredSiteUrl.replace(/\/+$/, "");
+  }
+
+  const forwardedProto =
+    req.headers["x-forwarded-proto"];
+
+  const protocol =
+    typeof forwardedProto === "string"
+      ? forwardedProto.split(",")[0].trim()
+      : "https";
+
+  const forwardedHost =
+    req.headers["x-forwarded-host"];
+
+  const host =
+    typeof forwardedHost === "string"
+      ? forwardedHost.split(",")[0].trim()
+      : req.headers.host;
+
+  if (host) {
+    return `${protocol}://${host}`.replace(/\/+$/, "");
+  }
+
+  return "https://3dtransmissiontools.com";
 }
 
 function getAvailableStock(product) {
@@ -69,17 +108,117 @@ function getRequestedQuantity(value) {
   return quantity;
 }
 
+function getUniqueCartItems(items) {
+  const combinedItems = new Map();
+
+  for (const item of items) {
+    if (!item || typeof item.id !== "string") {
+      return null;
+    }
+
+    const id = item.id.trim();
+    const quantity = getRequestedQuantity(item.quantity);
+
+    if (!id || quantity === null) {
+      return null;
+    }
+
+    const existingQuantity =
+      combinedItems.get(id) || 0;
+
+    const combinedQuantity =
+      existingQuantity + quantity;
+
+    if (
+      !Number.isSafeInteger(combinedQuantity) ||
+      combinedQuantity > 99
+    ) {
+      return null;
+    }
+
+    combinedItems.set(id, combinedQuantity);
+  }
+
+  return Array.from(
+    combinedItems,
+    ([id, quantity]) => ({
+      id,
+      quantity
+    })
+  );
+}
+
+function createGroundShippingOption(amount) {
+  return {
+    shipping_rate_data: {
+      type: "fixed_amount",
+
+      fixed_amount: {
+        amount,
+        currency: "usd"
+      },
+
+      display_name: "USPS Ground Advantage",
+
+      delivery_estimate: {
+        minimum: {
+          unit: "business_day",
+          value: 3
+        },
+
+        maximum: {
+          unit: "business_day",
+          value: 6
+        }
+      }
+    }
+  };
+}
+
+function createPriorityShippingOption(amount) {
+  return {
+    shipping_rate_data: {
+      type: "fixed_amount",
+
+      fixed_amount: {
+        amount,
+        currency: "usd"
+      },
+
+      display_name: "USPS Priority Mail",
+
+      delivery_estimate: {
+        minimum: {
+          unit: "business_day",
+          value: 1
+        },
+
+        maximum: {
+          unit: "business_day",
+          value: 3
+        }
+      }
+    }
+  };
+}
+
 export default async function handler(req, res) {
+  res.setHeader("Cache-Control", "no-store");
+
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
 
     return res.status(405).json({
-      error: "Method not allowed"
+      error: "Method not allowed."
     });
   }
 
-  if (!process.env.STRIPE_SECRET_KEY) {
-    console.error("STRIPE_SECRET_KEY is not configured.");
+  const stripe = getStripe();
+
+  if (!stripe) {
+    console.error(
+      "STRIPE_SECRET_KEY is not configured."
+    );
 
     return res.status(500).json({
       error: "Checkout is temporarily unavailable."
@@ -100,26 +239,28 @@ export default async function handler(req, res) {
 
     if (items.length > 50) {
       return res.status(400).json({
-        error: "Your cart contains too many different items."
+        error:
+          "Your cart contains too many different items."
+      });
+    }
+
+    const cartItems = getUniqueCartItems(items);
+
+    if (!cartItems || cartItems.length === 0) {
+      return res.status(400).json({
+        error: "Your cart contains an invalid item."
       });
     }
 
     const products = loadProducts();
     const lineItems = [];
-    const orderedProductIds = [];
 
     let totalWeightOz = 0;
 
-    for (const item of items) {
-      if (!item || typeof item.id !== "string") {
-        return res.status(400).json({
-          error: "Your cart contains an invalid item."
-        });
-      }
-
+    for (const item of cartItems) {
       const product = products.find(
         currentProduct =>
-          String(currentProduct.id) === String(item.id)
+          String(currentProduct.id) === item.id
       );
 
       if (!product) {
@@ -128,149 +269,151 @@ export default async function handler(req, res) {
         });
       }
 
-      const requestedQuantity = getRequestedQuantity(
-        item.quantity
-      );
+      const productName =
+        String(product.name || "Product").trim();
 
-      if (requestedQuantity === null) {
-        return res.status(400).json({
-          error: `Invalid quantity for ${product.name}.`
-        });
-      }
-
-      const availableStock = getAvailableStock(product);
+      const availableStock =
+        getAvailableStock(product);
 
       if (availableStock === 0) {
         return res.status(409).json({
-          error: `${product.name} is currently out of stock.`
+          error:
+            `${productName} is currently out of stock.`
         });
       }
 
-      if (requestedQuantity > availableStock) {
+      if (item.quantity > availableStock) {
         return res.status(409).json({
           error:
-            `Only ${availableStock} of ${product.name} ` +
-            `are currently available.`
+            `Only ${availableStock} of ${productName} ` +
+            "are currently available."
         });
       }
 
       const price = Number(product.price);
 
-      if (!Number.isFinite(price) || price < 0) {
-        throw new Error(
-          `Invalid price configured for product ${product.id}.`
+      if (
+        !Number.isFinite(price) ||
+        price <= 0
+      ) {
+        console.error(
+          "Invalid product price:",
+          product.id,
+          product.price
         );
+
+        return res.status(500).json({
+          error:
+            "One of the products is not configured correctly."
+        });
+      }
+
+      const unitAmount = Math.round(price * 100);
+
+      if (
+        !Number.isSafeInteger(unitAmount) ||
+        unitAmount < 1
+      ) {
+        return res.status(500).json({
+          error:
+            "One of the products is not configured correctly."
+        });
       }
 
       const weightOz = getWeightOz(product);
 
-      totalWeightOz += weightOz * requestedQuantity;
-      orderedProductIds.push(String(product.id));
+      totalWeightOz += weightOz * item.quantity;
 
       lineItems.push({
         price_data: {
           currency: "usd",
-          unit_amount: Math.round(price * 100),
+
+          unit_amount: unitAmount,
+
           product_data: {
-            name: String(product.name || "Product"),
+            name: productName,
+
             metadata: {
               product_id: String(product.id)
             }
           }
         },
-        quantity: requestedQuantity
+
+        quantity: item.quantity
       });
     }
 
-    const groundShippingAmount =
+    if (
+      !Number.isFinite(totalWeightOz) ||
+      totalWeightOz <= 0
+    ) {
+      return res.status(500).json({
+        error:
+          "Unable to calculate the package weight."
+      });
+    }
+
+    const groundAmount =
       getGroundShippingAmount(totalWeightOz);
 
-    const priorityShippingAmount =
+    const priorityAmount =
       getPriorityShippingAmount(totalWeightOz);
 
-    const groundShipping = {
-      shipping_rate_data: {
-        type: "fixed_amount",
-        fixed_amount: {
-          amount: groundShippingAmount,
-          currency: "usd"
+    const groundShipping =
+      createGroundShippingOption(groundAmount);
+
+    const priorityShipping =
+      createPriorityShippingOption(priorityAmount);
+
+    const shippingOptions =
+      preferredShippingMethod === "priority"
+        ? [priorityShipping, groundShipping]
+        : [groundShipping, priorityShipping];
+
+    const siteUrl = getSiteUrl(req);
+
+    const session =
+      await stripe.checkout.sessions.create({
+        mode: "payment",
+
+        payment_method_types: ["card"],
+
+        automatic_tax: {
+          enabled: true
         },
-        display_name: "USPS Ground Advantage",
-        delivery_estimate: {
-          minimum: {
-            unit: "business_day",
-            value: 3
-          },
-          maximum: {
-            unit: "business_day",
-            value: 6
-          }
-        }
-      }
-    };
 
-    const priorityShipping = {
-      shipping_rate_data: {
-        type: "fixed_amount",
-        fixed_amount: {
-          amount: priorityShippingAmount,
-          currency: "usd"
+        billing_address_collection: "required",
+
+        customer_creation: "always",
+
+        line_items: lineItems,
+
+        shipping_address_collection: {
+          allowed_countries: ["US"]
         },
-        display_name: "USPS Priority Mail",
-        delivery_estimate: {
-          minimum: {
-            unit: "business_day",
-            value: 1
-          },
-          maximum: {
-            unit: "business_day",
-            value: 3
-          }
-        }
-      }
-    };
 
-    const priorityFirst =
-      preferredShippingMethod === "priority";
+        shipping_options: shippingOptions,
 
-    const shippingOptions = priorityFirst
-      ? [priorityShipping, groundShipping]
-      : [groundShipping, priorityShipping];
+        metadata: {
+          shipped: "false",
+          tracking: "",
+          package_weight_oz:
+            String(totalWeightOz)
+        },
 
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
+        success_url:
+          `${siteUrl}/success.html` +
+          "?session_id={CHECKOUT_SESSION_ID}",
 
-      payment_method_types: ["card"],
+        cancel_url:
+          `${siteUrl}/cart.html`
+      });
 
-      automatic_tax: {
-        enabled: true
-      },
-
-      billing_address_collection: "required",
-
-      customer_creation: "always",
-
-      line_items: lineItems,
-
-      shipping_address_collection: {
-        allowed_countries: ["US"]
-      },
-
-      shipping_options: shippingOptions,
-
-      metadata: {
-        product_ids: orderedProductIds.join(","),
-        shipped: "false",
-        tracking: ""
-      },
-
-      success_url:
-        "https://3dtransmissiontools.com/" +
-        "success.html?session_id={CHECKOUT_SESSION_ID}",
-
-      cancel_url:
-        "https://3dtransmissiontools.com/cart.html"
-    });
+    if (!session.url) {
+      throw new Error(
+        "Stripe did not return a Checkout URL."
+      );
+    }
 
     return res.status(200).json({
       url: session.url
