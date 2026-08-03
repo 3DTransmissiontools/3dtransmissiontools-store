@@ -1,171 +1,132 @@
 import Stripe from "stripe";
-import fs from "fs";
-import path from "path";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-function jsonResponse(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      "Content-Type": "application/json"
-    }
-  });
-}
-
-export default {
-  async fetch(request) {
-    if (request.method !== "POST") {
-      return jsonResponse(
-        { error: "Method not allowed" },
-        405
-      );
-    }
-
-    const signature = request.headers.get("stripe-signature");
-
-    if (!signature) {
-      return jsonResponse(
-        { error: "Missing Stripe-Signature header" },
-        400
-      );
-    }
-
-    if (!process.env.STRIPE_SECRET_KEY) {
-      console.error("STRIPE_SECRET_KEY is not configured.");
-
-      return jsonResponse(
-        { error: "Stripe secret key is not configured" },
-        500
-      );
-    }
-
-    if (!process.env.STRIPE_WEBHOOK_SECRET) {
-      console.error("STRIPE_WEBHOOK_SECRET is not configured.");
-
-      return jsonResponse(
-        { error: "Stripe webhook secret is not configured" },
-        500
-      );
-    }
-
-    let event;
-
-    try {
-      /*
-       * Stripe must receive the exact, unmodified request body.
-       * request.text() reads the raw body before JSON parsing.
-       */
-      const rawBody = await request.text();
-
-      event = stripe.webhooks.constructEvent(
-        rawBody,
-        signature,
-        process.env.STRIPE_WEBHOOK_SECRET
-      );
-    } catch (error) {
-      console.error(
-        "Webhook signature verification failed:",
-        error.message
-      );
-
-      return jsonResponse(
-        {
-          error: `Webhook signature verification failed: ${error.message}`
-        },
-        400
-      );
-    }
-
-    try {
-      if (event.type === "checkout.session.completed") {
-        const session = event.data.object;
-
-        const lineItems = await stripe.checkout.sessions.listLineItems(
-          session.id,
-          {
-            limit: 100
-          }
-        );
-
-        const items = lineItems.data.map(item => ({
-          name: item.description || "Item",
-          quantity: item.quantity || 1,
-          price: Number(item.amount_total || 0) / 100
-        }));
-
-        const order = {
-          id: session.id,
-          date: new Date().toISOString(),
-          customer_email: session.customer_details?.email || "",
-          amount_total: Number(session.amount_total || 0) / 100,
-          tax: Number(session.total_details?.amount_tax || 0) / 100,
-          shipping_method:
-            session.shipping_cost?.shipping_rate || "unknown",
-          shipping_address:
-            session.customer_details?.address || {},
-          payment_status:
-            session.payment_status || "unknown",
-          items,
-          shipped: false,
-          tracking: ""
-        };
-
-        const ordersFile = path.join(
-          process.cwd(),
-          "api",
-          "orders-data.json"
-        );
-
-        let orders = [];
-
-        if (fs.existsSync(ordersFile)) {
-          const fileContents = fs
-            .readFileSync(ordersFile, "utf8")
-            .trim();
-
-          if (fileContents) {
-            orders = JSON.parse(fileContents);
-          }
-        }
-
-        /*
-         * Stripe can retry webhook events.
-         * This prevents the same checkout session from being saved twice.
-         */
-        const orderAlreadyExists = orders.some(
-          existingOrder => existingOrder.id === order.id
-        );
-
-        if (!orderAlreadyExists) {
-          orders.unshift(order);
-
-          fs.writeFileSync(
-            ordersFile,
-            JSON.stringify(orders, null, 2),
-            "utf8"
-          );
-
-          console.log("Order saved:", order.id);
-        } else {
-          console.log("Duplicate order ignored:", order.id);
-        }
-      } else {
-        console.log("Unhandled Stripe event:", event.type);
-      }
-
-      return jsonResponse({
-        received: true
-      });
-    } catch (error) {
-      console.error("Webhook processing failed:", error);
-
-      return jsonResponse(
-        {
-          error: "Webhook processing failed"
-        },
-        500
-      );
-    }
+export const config = {
+  api: {
+    bodyParser: false
   }
 };
+
+async function readRawBody(req) {
+  const chunks = [];
+
+  for await (const chunk of req) {
+    chunks.push(
+      Buffer.isBuffer(chunk)
+        ? chunk
+        : Buffer.from(chunk)
+    );
+  }
+
+  return Buffer.concat(chunks);
+}
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    res.setHeader("Allow", ["POST"]);
+
+    return res.status(405).json({
+      error: "Method not allowed"
+    });
+  }
+
+  if (!process.env.STRIPE_SECRET_KEY) {
+    console.error("STRIPE_SECRET_KEY is not configured.");
+
+    return res.status(500).json({
+      error: "Stripe is not configured."
+    });
+  }
+
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    console.error("STRIPE_WEBHOOK_SECRET is not configured.");
+
+    return res.status(500).json({
+      error: "Webhook is not configured."
+    });
+  }
+
+  const signature = req.headers["stripe-signature"];
+
+  if (!signature) {
+    return res.status(400).json({
+      error: "Missing Stripe-Signature header."
+    });
+  }
+
+  let event;
+
+  try {
+    const rawBody = await readRawBody(req);
+
+    event = stripe.webhooks.constructEvent(
+      rawBody,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
+  } catch (error) {
+    console.error(
+      "Webhook signature verification failed:",
+      error.message
+    );
+
+    return res.status(400).json({
+      error: "Webhook signature verification failed."
+    });
+  }
+
+  try {
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object;
+
+        console.log(
+          "Checkout completed:",
+          session.id,
+          session.customer_details?.email || ""
+        );
+
+        break;
+      }
+
+      case "checkout.session.async_payment_succeeded": {
+        const session = event.data.object;
+
+        console.log(
+          "Delayed payment succeeded:",
+          session.id
+        );
+
+        break;
+      }
+
+      case "checkout.session.async_payment_failed": {
+        const session = event.data.object;
+
+        console.warn(
+          "Delayed payment failed:",
+          session.id
+        );
+
+        break;
+      }
+
+      default:
+        console.log(
+          "Unhandled Stripe event:",
+          event.type
+        );
+    }
+
+    return res.status(200).json({
+      received: true
+    });
+  } catch (error) {
+    console.error("Webhook processing failed:", error);
+
+    return res.status(500).json({
+      error: "Webhook processing failed."
+    });
+  }
+}
