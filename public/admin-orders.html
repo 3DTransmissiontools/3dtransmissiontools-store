@@ -1,149 +1,645 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="utf-8">
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1"
+>
 
 <title>Orders Dashboard</title>
 
 <style>
-
-body{
-font-family:Arial;
-background:#f4f4f4;
-padding:30px;
+* {
+  box-sizing: border-box;
 }
 
-.order{
-background:white;
-padding:20px;
-margin-bottom:20px;
-border-radius:8px;
+body {
+  margin: 0;
+  padding: 30px;
+  font-family: Arial, sans-serif;
+  background: #f4f4f4;
+  color: #111;
 }
 
-.items{
-margin-top:10px;
-padding-left:15px;
+.page {
+  max-width: 1000px;
+  margin: 0 auto;
 }
 
-button{
-padding:8px 12px;
-margin-top:8px;
-cursor:pointer;
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
 }
 
-input{
-padding:6px;
+.login {
+  max-width: 450px;
+  margin: 80px auto;
+  padding: 28px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.08);
 }
 
+.login input,
+.tracking-input {
+  width: 100%;
+  padding: 11px;
+  margin-top: 10px;
+  font-size: 16px;
+}
+
+button {
+  padding: 10px 14px;
+  margin-top: 10px;
+  cursor: pointer;
+  border: 0;
+  border-radius: 6px;
+  background: #111;
+  color: white;
+  font-weight: bold;
+}
+
+button.secondary {
+  background: #666;
+}
+
+button.danger {
+  background: #a40000;
+}
+
+button:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.order {
+  background: white;
+  padding: 22px;
+  margin-bottom: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.05);
+}
+
+.order-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.items {
+  padding-left: 20px;
+}
+
+.status {
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 13px;
+}
+
+.status.shipped {
+  background: #d9f4df;
+  color: #155724;
+}
+
+.status.pending {
+  background: #fff1c7;
+  color: #684f00;
+}
+
+.message {
+  padding: 14px;
+  margin-bottom: 18px;
+  border-radius: 7px;
+  background: white;
+}
+
+.error {
+  color: #a40000;
+}
+
+.muted {
+  color: #666;
+}
+
+.hidden {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  body {
+    padding: 15px;
+  }
+
+  .order-grid {
+    grid-template-columns: 1fr;
+  }
+}
 </style>
-
 </head>
 
 <body>
 
-<h1>Orders</h1>
+<div id="login-view" class="login">
+  <h1>Orders Dashboard</h1>
+  <p>Enter your admin password.</p>
 
-<div id="orders"></div>
+  <input
+    id="password"
+    type="password"
+    autocomplete="current-password"
+    placeholder="Admin password"
+  >
+
+  <button id="login-button" type="button">
+    Sign In
+  </button>
+
+  <div
+    id="login-error"
+    class="error"
+    role="alert"
+  ></div>
+</div>
+
+<div id="dashboard-view" class="page hidden">
+  <div class="header">
+    <div>
+      <h1>Orders</h1>
+      <div id="order-count" class="muted"></div>
+    </div>
+
+    <div>
+      <button
+        id="refresh-button"
+        type="button"
+      >
+        Refresh
+      </button>
+
+      <button
+        id="logout-button"
+        class="secondary"
+        type="button"
+      >
+        Sign Out
+      </button>
+    </div>
+  </div>
+
+  <div
+    id="message"
+    class="message hidden"
+    role="status"
+  ></div>
+
+  <div id="orders"></div>
+</div>
 
 <script>
+const PASSWORD_KEY = "ordersAdminPassword"
 
-async function loadOrders(){
+const loginView =
+  document.getElementById("login-view")
 
-const res = await fetch("/api/orders");
-const orders = await res.json();
+const dashboardView =
+  document.getElementById("dashboard-view")
 
-const container = document.getElementById("orders");
+const passwordInput =
+  document.getElementById("password")
 
-container.innerHTML="";
+const loginButton =
+  document.getElementById("login-button")
 
-orders.forEach(order=>{
+const loginError =
+  document.getElementById("login-error")
 
-const itemsHTML = order.items.map(item => `
-<li>${item.name} (qty ${item.quantity})</li>
-`).join("");
+const ordersContainer =
+  document.getElementById("orders")
 
-const div = document.createElement("div");
+const messageElement =
+  document.getElementById("message")
 
-div.className="order";
-
-div.innerHTML=`
-
-<b>Order:</b> ${order.id}<br>
-<b>Date:</b> ${order.date}<br>
-<b>Email:</b> ${order.customer_email}<br>
-
-<br>
-
-<b>Items:</b>
-
-<ul class="items">
-${itemsHTML}
-</ul>
-
-<b>Total:</b> $${order.amount_total}<br>
-<b>Tax:</b> $${order.tax}<br>
-
-<br>
-
-<b>Shipping Address:</b><br>
-
-${order.shipping_address.line1 || ""}<br>
-${order.shipping_address.city || ""} ${order.shipping_address.state || ""}
-
-<br><br>
-
-<b>Status:</b>
-${order.shipped ? "Shipped" : "Not shipped"}
-
-<br>
-
-<input
-placeholder="Tracking number"
-value="${order.tracking || ""}"
-id="track-${order.id}"
->
-
-<br>
-
-<button onclick="markShipped('${order.id}')">
-Mark Shipped
-</button>
-
-`;
-
-container.appendChild(div);
-
-});
-
+function getPassword() {
+  return sessionStorage.getItem(PASSWORD_KEY) || ""
 }
 
-async function markShipped(id){
-
-const tracking = document.getElementById("track-"+id).value;
-
-await fetch("/api/orders",{
-
-method:"POST",
-
-headers:{
-"Content-Type":"application/json"
-},
-
-body:JSON.stringify({
-id,
-shipped:true,
-tracking
-})
-
-});
-
-loadOrders();
-
+function setPassword(password) {
+  sessionStorage.setItem(PASSWORD_KEY, password)
 }
 
-loadOrders();
+function clearPassword() {
+  sessionStorage.removeItem(PASSWORD_KEY)
+}
 
+function showMessage(text, isError = false) {
+  messageElement.textContent = text
+  messageElement.classList.remove("hidden")
+  messageElement.classList.toggle("error", isError)
+}
+
+function hideMessage() {
+  messageElement.textContent = ""
+  messageElement.classList.add("hidden")
+  messageElement.classList.remove("error")
+}
+
+function setDashboardVisible(visible) {
+  loginView.classList.toggle("hidden", visible)
+  dashboardView.classList.toggle("hidden", !visible)
+}
+
+function formatMoney(value) {
+  return "$" + Number(value || 0).toFixed(2)
+}
+
+function formatDate(value) {
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return value || ""
+  }
+
+  return date.toLocaleString()
+}
+
+function appendTextLine(parent, label, value) {
+  const line = document.createElement("div")
+  const strong = document.createElement("strong")
+
+  strong.textContent = label + ": "
+  line.appendChild(strong)
+  line.appendChild(
+    document.createTextNode(String(value ?? ""))
+  )
+
+  parent.appendChild(line)
+}
+
+function createAddressBlock(address = {}) {
+  const block = document.createElement("div")
+
+  const lines = [
+    address.line1,
+    address.line2,
+    [
+      address.city,
+      address.state,
+      address.postal_code
+    ].filter(Boolean).join(" "),
+    address.country
+  ].filter(Boolean)
+
+  if (!lines.length) {
+    block.textContent = "No shipping address available."
+    return block
+  }
+
+  lines.forEach(text => {
+    const line = document.createElement("div")
+    line.textContent = text
+    block.appendChild(line)
+  })
+
+  return block
+}
+
+function createItemsList(items = []) {
+  const list = document.createElement("ul")
+  list.className = "items"
+
+  items.forEach(item => {
+    const listItem = document.createElement("li")
+
+    listItem.textContent =
+      `${item.name} — Qty ${item.quantity} — ` +
+      `${formatMoney(item.price)}`
+
+    list.appendChild(listItem)
+  })
+
+  return list
+}
+
+function createOrderCard(order) {
+  const card = document.createElement("section")
+  card.className = "order"
+
+  const title = document.createElement("h2")
+  title.textContent =
+    order.customer_name ||
+    order.customer_email ||
+    "Customer Order"
+
+  card.appendChild(title)
+
+  const status = document.createElement("span")
+  status.className =
+    "status " +
+    (order.shipped ? "shipped" : "pending")
+
+  status.textContent =
+    order.shipped ? "Shipped" : "Not Shipped"
+
+  card.appendChild(status)
+
+  const grid = document.createElement("div")
+  grid.className = "order-grid"
+
+  const details = document.createElement("div")
+  appendTextLine(details, "Order", order.id)
+  appendTextLine(details, "Date", formatDate(order.date))
+  appendTextLine(
+    details,
+    "Email",
+    order.customer_email || ""
+  )
+  appendTextLine(
+    details,
+    "Payment",
+    order.payment_status || ""
+  )
+  appendTextLine(
+    details,
+    "Subtotal",
+    formatMoney(order.subtotal)
+  )
+  appendTextLine(
+    details,
+    "Shipping",
+    formatMoney(order.shipping_amount)
+  )
+  appendTextLine(
+    details,
+    "Tax",
+    formatMoney(order.tax)
+  )
+  appendTextLine(
+    details,
+    "Total",
+    formatMoney(order.amount_total)
+  )
+
+  const shipping = document.createElement("div")
+  const shippingTitle = document.createElement("strong")
+  shippingTitle.textContent = "Shipping Address"
+
+  shipping.appendChild(shippingTitle)
+  shipping.appendChild(
+    createAddressBlock(order.shipping_address)
+  )
+
+  grid.appendChild(details)
+  grid.appendChild(shipping)
+
+  card.appendChild(grid)
+
+  const itemTitle = document.createElement("h3")
+  itemTitle.textContent = "Items"
+  card.appendChild(itemTitle)
+  card.appendChild(createItemsList(order.items))
+
+  const trackingLabel = document.createElement("label")
+  trackingLabel.textContent = "Tracking number"
+
+  const trackingInput = document.createElement("input")
+  trackingInput.className = "tracking-input"
+  trackingInput.type = "text"
+  trackingInput.maxLength = 100
+  trackingInput.value = order.tracking || ""
+  trackingInput.placeholder = "Tracking number"
+
+  trackingLabel.appendChild(trackingInput)
+  card.appendChild(trackingLabel)
+
+  const saveButton = document.createElement("button")
+  saveButton.type = "button"
+  saveButton.textContent =
+    order.shipped
+      ? "Update Tracking"
+      : "Mark Shipped"
+
+  saveButton.addEventListener("click", async () => {
+    await updateOrder(
+      order.id,
+      true,
+      trackingInput.value,
+      saveButton
+    )
+  })
+
+  card.appendChild(saveButton)
+
+  if (order.shipped) {
+    const undoButton = document.createElement("button")
+    undoButton.type = "button"
+    undoButton.className = "danger"
+    undoButton.textContent = "Mark Not Shipped"
+
+    undoButton.addEventListener("click", async () => {
+      await updateOrder(
+        order.id,
+        false,
+        trackingInput.value,
+        undoButton
+      )
+    })
+
+    card.appendChild(
+      document.createTextNode(" ")
+    )
+
+    card.appendChild(undoButton)
+  }
+
+  return card
+}
+
+function renderOrders(orders) {
+  ordersContainer.replaceChildren()
+
+  document.getElementById("order-count").textContent =
+    `${orders.length} order` +
+    `${orders.length === 1 ? "" : "s"}`
+
+  if (!orders.length) {
+    const empty = document.createElement("div")
+    empty.className = "message"
+    empty.textContent = "No paid orders were found."
+
+    ordersContainer.appendChild(empty)
+    return
+  }
+
+  orders.forEach(order => {
+    ordersContainer.appendChild(
+      createOrderCard(order)
+    )
+  })
+}
+
+async function adminFetch(url, options = {}) {
+  const password = getPassword()
+
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      "X-Admin-Password": password
+    }
+  })
+}
+
+async function loadOrders() {
+  hideMessage()
+  showMessage("Loading orders...")
+
+  try {
+    const response = await adminFetch("/api/orders")
+    const data = await response.json()
+
+    if (response.status === 401) {
+      clearPassword()
+      setDashboardVisible(false)
+      loginError.textContent =
+        "Incorrect admin password."
+      return
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || "Unable to load orders."
+      )
+    }
+
+    hideMessage()
+    renderOrders(data)
+  } catch (error) {
+    showMessage(error.message, true)
+  }
+}
+
+async function updateOrder(
+  id,
+  shipped,
+  tracking,
+  button
+) {
+  const originalText = button.textContent
+
+  button.disabled = true
+  button.textContent = "Saving..."
+
+  try {
+    const response = await adminFetch(
+      "/api/orders",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          id,
+          shipped,
+          tracking
+        })
+      }
+    )
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(
+        data.error || "Unable to update order."
+      )
+    }
+
+    showMessage("Order updated.")
+    await loadOrders()
+  } catch (error) {
+    showMessage(error.message, true)
+    button.disabled = false
+    button.textContent = originalText
+  }
+}
+
+async function signIn() {
+  const password = passwordInput.value
+
+  if (!password) {
+    loginError.textContent =
+      "Enter your admin password."
+    return
+  }
+
+  loginButton.disabled = true
+  loginButton.textContent = "Signing In..."
+  loginError.textContent = ""
+
+  setPassword(password)
+
+  try {
+    const response = await adminFetch("/api/orders")
+
+    if (!response.ok) {
+      clearPassword()
+
+      loginError.textContent =
+        response.status === 401
+          ? "Incorrect admin password."
+          : "Unable to sign in."
+
+      return
+    }
+
+    const orders = await response.json()
+
+    setDashboardVisible(true)
+    renderOrders(orders)
+  } catch (error) {
+    clearPassword()
+    loginError.textContent =
+      "Unable to connect to the order service."
+  } finally {
+    loginButton.disabled = false
+    loginButton.textContent = "Sign In"
+  }
+}
+
+loginButton.addEventListener("click", signIn)
+
+passwordInput.addEventListener(
+  "keydown",
+  event => {
+    if (event.key === "Enter") {
+      signIn()
+    }
+  }
+)
+
+document
+  .getElementById("refresh-button")
+  .addEventListener("click", loadOrders)
+
+document
+  .getElementById("logout-button")
+  .addEventListener("click", () => {
+    clearPassword()
+    passwordInput.value = ""
+    setDashboardVisible(false)
+  })
+
+if (getPassword()) {
+  setDashboardVisible(true)
+  loadOrders()
+}
 </script>
 
 </body>
-
 </html>
