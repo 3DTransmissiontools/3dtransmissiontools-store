@@ -1,7 +1,5 @@
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
 export const config = {
   api: {
     bodyParser: false
@@ -22,36 +20,93 @@ async function readRawBody(req) {
   return Buffer.concat(chunks);
 }
 
+function getHeaderValue(value) {
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+
+  return value;
+}
+
 export default async function handler(req, res) {
+  res.setHeader("Cache-Control", "no-store");
+
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
 
     return res.status(405).json({
-      error: "Method not allowed"
+      received: false,
+      code: "METHOD_NOT_ALLOWED",
+      error: "Method not allowed."
     });
   }
 
-  if (!process.env.STRIPE_SECRET_KEY) {
-    console.error("STRIPE_SECRET_KEY is not configured.");
+  const stripeSecretKey =
+    process.env.STRIPE_SECRET_KEY;
+
+  const webhookSecret =
+    process.env.STRIPE_WEBHOOK_SECRET;
+
+  if (!stripeSecretKey) {
+    console.error(
+      "Webhook configuration error: " +
+      "STRIPE_SECRET_KEY is missing."
+    );
 
     return res.status(500).json({
-      error: "Stripe is not configured."
+      received: false,
+      code: "MISSING_STRIPE_SECRET_KEY",
+      error: "Stripe secret key is not configured."
     });
   }
 
-  if (!process.env.STRIPE_WEBHOOK_SECRET) {
-    console.error("STRIPE_WEBHOOK_SECRET is not configured.");
+  if (!webhookSecret) {
+    console.error(
+      "Webhook configuration error: " +
+      "STRIPE_WEBHOOK_SECRET is missing."
+    );
 
     return res.status(500).json({
-      error: "Webhook is not configured."
+      received: false,
+      code: "MISSING_WEBHOOK_SECRET",
+      error: "Stripe webhook secret is not configured."
     });
   }
 
-  const signature = req.headers["stripe-signature"];
+  const signature = getHeaderValue(
+    req.headers["stripe-signature"]
+  );
 
-  if (!signature) {
+  if (
+    typeof signature !== "string" ||
+    signature.length === 0
+  ) {
+    console.error(
+      "Webhook request did not contain " +
+      "a Stripe-Signature header."
+    );
+
     return res.status(400).json({
+      received: false,
+      code: "MISSING_SIGNATURE",
       error: "Missing Stripe-Signature header."
+    });
+  }
+
+  let stripe;
+
+  try {
+    stripe = new Stripe(stripeSecretKey);
+  } catch (error) {
+    console.error(
+      "Unable to initialize Stripe:",
+      error
+    );
+
+    return res.status(500).json({
+      received: false,
+      code: "STRIPE_INITIALIZATION_FAILED",
+      error: "Unable to initialize Stripe."
     });
   }
 
@@ -63,15 +118,17 @@ export default async function handler(req, res) {
     event = stripe.webhooks.constructEvent(
       rawBody,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET
+      webhookSecret
     );
   } catch (error) {
     console.error(
       "Webhook signature verification failed:",
-      error.message
+      error?.message || error
     );
 
     return res.status(400).json({
+      received: false,
+      code: "SIGNATURE_VERIFICATION_FAILED",
       error: "Webhook signature verification failed."
     });
   }
@@ -83,8 +140,7 @@ export default async function handler(req, res) {
 
         console.log(
           "Checkout completed:",
-          session.id,
-          session.customer_details?.email || ""
+          session.id
         );
 
         break;
@@ -120,12 +176,18 @@ export default async function handler(req, res) {
     }
 
     return res.status(200).json({
-      received: true
+      received: true,
+      event_type: event.type
     });
   } catch (error) {
-    console.error("Webhook processing failed:", error);
+    console.error(
+      "Webhook processing failed:",
+      error
+    );
 
     return res.status(500).json({
+      received: false,
+      code: "EVENT_PROCESSING_FAILED",
       error: "Webhook processing failed."
     });
   }
