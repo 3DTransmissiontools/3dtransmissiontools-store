@@ -91,6 +91,36 @@ function getProductCardMediaHtml(media, safeName, encodedMedia) {
   const firstImage = media.find(item => item.type === "image");
   const firstVideo = media.find(item => item.type === "video");
 
+  if (firstVideo) {
+    const startIndex = media.indexOf(firstVideo);
+    const safeSrc = escapeMediaAttribute(firstVideo.src);
+    const safePoster = escapeMediaAttribute(
+      firstVideo.poster || (firstImage ? firstImage.src : "")
+    );
+
+    return `
+      <button
+        type="button"
+        class="product-media-trigger video-preview-trigger"
+        onclick="openProductMedia('${encodedMedia}', ${startIndex})"
+        aria-label="Open video gallery for ${safeName}"
+      >
+        <video
+          class="product-card-video"
+          src="${safeSrc}"
+          ${safePoster ? `poster="${safePoster}"` : ""}
+          autoplay
+          muted
+          loop
+          playsinline
+          preload="metadata"
+          aria-hidden="true"
+        ></video>
+        <span class="video-available-badge">▶ Video</span>
+      </button>
+    `;
+  }
+
   if (firstImage) {
     const startIndex = media.indexOf(firstImage);
     const safeSrc = escapeMediaAttribute(firstImage.src);
@@ -103,26 +133,9 @@ function getProductCardMediaHtml(media, safeName, encodedMedia) {
         aria-label="Open media gallery for ${safeName}"
       >
         <img src="${safeSrc}" alt="${safeName}">
-        ${firstVideo ? '<span class="video-available-badge">▶ Video</span>' : ""}
       </button>
     `;
   }
-
-  const safePoster = escapeMediaAttribute(firstVideo.poster);
-
-  return `
-    <button
-      type="button"
-      class="product-media-trigger video-card-trigger"
-      onclick="openProductMedia('${encodedMedia}', 0)"
-      aria-label="Play video for ${safeName}"
-    >
-      ${safePoster
-        ? `<img src="${safePoster}" alt="${safeName} video">`
-        : '<span class="video-card-icon">▶</span>'}
-      <span class="video-available-badge">▶ Video</span>
-    </button>
-  `;
 }
 
 function pauseCurrentLightboxVideo() {

@@ -621,10 +621,24 @@ overflow:hidden;
 background:transparent;
 }
 
-.product-media-trigger img{
+.product-media-trigger img,
+.product-media-trigger video{
 width:100%;
 height:100%;
 object-fit:contain;
+}
+
+.product-card-video{
+display:block;
+background:#000;
+}
+
+.video-preview-trigger{
+background:#000;
+}
+
+.video-preview-trigger:hover{
+background:#000;
 }
 
 .video-available-badge{
