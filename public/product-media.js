@@ -69,7 +69,18 @@ function getProductMedia(product) {
 }
 
 function encodeProductMedia(media) {
-  return encodeURIComponent(JSON.stringify(media));
+  // encodeURIComponent intentionally leaves apostrophes alone. These values are
+  // used inside single-quoted inline handlers, so encode them explicitly too.
+  return encodeURIComponent(JSON.stringify(media)).replace(/'/g, "%27");
+}
+
+function escapeMediaAttribute(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function getProductCardMediaHtml(media, safeName, encodedMedia) {
@@ -82,6 +93,7 @@ function getProductCardMediaHtml(media, safeName, encodedMedia) {
 
   if (firstImage) {
     const startIndex = media.indexOf(firstImage);
+    const safeSrc = escapeMediaAttribute(firstImage.src);
 
     return `
       <button
@@ -90,11 +102,13 @@ function getProductCardMediaHtml(media, safeName, encodedMedia) {
         onclick="openProductMedia('${encodedMedia}', ${startIndex})"
         aria-label="Open media gallery for ${safeName}"
       >
-        <img src="${firstImage.src}" alt="${safeName}">
+        <img src="${safeSrc}" alt="${safeName}">
         ${firstVideo ? '<span class="video-available-badge">▶ Video</span>' : ""}
       </button>
     `;
   }
+
+  const safePoster = escapeMediaAttribute(firstVideo.poster);
 
   return `
     <button
@@ -103,8 +117,8 @@ function getProductCardMediaHtml(media, safeName, encodedMedia) {
       onclick="openProductMedia('${encodedMedia}', 0)"
       aria-label="Play video for ${safeName}"
     >
-      ${firstVideo.poster
-        ? `<img src="${firstVideo.poster}" alt="${safeName} video">`
+      ${safePoster
+        ? `<img src="${safePoster}" alt="${safeName} video">`
         : '<span class="video-card-icon">▶</span>'}
       <span class="video-available-badge">▶ Video</span>
     </button>
@@ -144,13 +158,15 @@ function openProductMedia(encodedMedia, startIndex = 0) {
     currentProductMediaIndex = 0;
   }
 
-  renderCurrentProductMedia();
-  renderProductMediaThumbnails();
-
   const lightbox = document.getElementById("lightbox");
+  if (!lightbox) return;
+
   lightbox.classList.add("show");
   lightbox.setAttribute("aria-hidden", "false");
   document.body.classList.add("lightbox-open");
+
+  renderCurrentProductMedia();
+  renderProductMediaThumbnails();
 }
 
 function renderCurrentProductMedia() {
@@ -288,6 +304,8 @@ function closeProductMedia(event) {
   pauseCurrentLightboxVideo();
 
   const lightbox = document.getElementById("lightbox");
+  if (!lightbox) return;
+
   lightbox.classList.remove("show");
   lightbox.setAttribute("aria-hidden", "true");
   document.body.classList.remove("lightbox-open");

@@ -1,6 +1,6 @@
 <!-- /public/shop.html -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -54,15 +54,20 @@
 
 </div>
 
-<div id="lightbox" class="lightbox" onclick="closeLightbox(event)">
+<div
+  id="lightbox"
+  class="lightbox"
+  aria-hidden="true"
+  onclick="closeProductMedia(event)"
+>
 <div class="lightbox-content" onclick="event.stopPropagation()">
-<button class="close-btn" onclick="closeLightbox(event)">×</button>
-<img id="lightbox-img" src="" alt="Full size product image">
+<button class="close-btn" type="button" aria-label="Close gallery" onclick="closeProductMedia(event)">&times;</button>
+<div id="lightbox-media" class="lightbox-media"></div>
 
 <div class="lightbox-controls">
-<button onclick="prevImage()">‹ Prev</button>
+<button type="button" onclick="previousProductMedia()">&lsaquo; Prev</button>
 <div id="lightbox-counter" class="lightbox-counter">1 / 1</div>
-<button onclick="nextImage()">Next ›</button>
+<button type="button" onclick="nextProductMedia()">Next &rsaquo;</button>
 </div>
 
 <div id="thumbnail-strip" class="thumbnail-strip"></div>
@@ -70,10 +75,9 @@
 </div>
 
 <script src="/cart.js"></script>
+<script src="/product-media.js"></script>
 
 <script>
-let currentGallery = []
-let currentImageIndex = 0
 let allProducts = []
 
 function escapeHtml(value){
@@ -209,25 +213,16 @@ products.forEach(product=>{
 const card=document.createElement("div")
 card.className="card"
 
-const gallery=
-product.images && product.images.length
-? product.images
-: (product.image ? [product.image] : [])
-
-const firstImage=gallery.length ? gallery[0] : ""
-const escapedGallery=encodeURIComponent(JSON.stringify(gallery))
+const media=getProductMedia(product)
+const encodedMedia=encodeProductMedia(media)
 const safeId=String(product.id)
 const safeName=escapeHtml(product.name)
 const safeDescription=escapeHtml(product.description || "")
 const safeCategory=escapeHtml(product.category || "")
 const maxQty=getSafeMaxQty(product)
 
-const imageHtml=firstImage
-? `<img src="${firstImage}" alt="${safeName}" onclick="openLightbox('${escapedGallery}', 0)">`
-: "No Image Yet"
-
 card.innerHTML=`
-<div class="image">${imageHtml}</div>
+<div class="image">${getProductCardMediaHtml(media, safeName, encodedMedia)}</div>
 <h3>${safeName}</h3>
 ${product.category ? `<div class="category">${safeCategory}</div>` : ""}
 <div class="description">${safeDescription}</div>
@@ -264,70 +259,6 @@ function addProductToCart(id){
 const quantity = getQty(id)
 addToCart(id, quantity)
 }
-
-function openLightbox(encodedGallery,startIndex){
-currentGallery=JSON.parse(decodeURIComponent(encodedGallery))
-currentImageIndex=startIndex||0
-updateLightboxImage()
-renderThumbnails()
-document.getElementById("lightbox").classList.add("show")
-}
-
-function updateLightboxImage(){
-if(!currentGallery.length) return
-document.getElementById("lightbox-img").src=currentGallery[currentImageIndex]
-document.getElementById("lightbox-counter").textContent=`${currentImageIndex+1} / ${currentGallery.length}`
-updateActiveThumbnail()
-}
-
-function renderThumbnails(){
-const strip=document.getElementById("thumbnail-strip")
-strip.innerHTML=""
-
-currentGallery.forEach((src,index)=>{
-const thumb=document.createElement("button")
-thumb.className="thumbnail"+(index===currentImageIndex?" active":"")
-thumb.innerHTML=`<img src="${src}">`
-thumb.onclick=function(){
-currentImageIndex=index
-updateLightboxImage()
-}
-strip.appendChild(thumb)
-})
-}
-
-function updateActiveThumbnail(){
-const thumbs=document.querySelectorAll(".thumbnail")
-thumbs.forEach((thumb,index)=>{
-thumb.classList.toggle("active",index===currentImageIndex)
-})
-}
-
-function prevImage(){
-if(!currentGallery.length) return
-currentImageIndex=(currentImageIndex-1+currentGallery.length)%currentGallery.length
-updateLightboxImage()
-}
-
-function nextImage(){
-if(!currentGallery.length) return
-currentImageIndex=(currentImageIndex+1)%currentGallery.length
-updateLightboxImage()
-}
-
-function closeLightbox(event){
-if(event) event.stopPropagation()
-document.getElementById("lightbox").classList.remove("show")
-}
-
-document.addEventListener("keydown",function(event){
-const lightboxOpen=document.getElementById("lightbox").classList.contains("show")
-if(!lightboxOpen) return
-
-if(event.key==="Escape") closeLightbox()
-if(event.key==="ArrowLeft") prevImage()
-if(event.key==="ArrowRight") nextImage()
-})
 
 document.getElementById("searchInput").addEventListener("input",applyFilters)
 document.getElementById("categoryFilter").addEventListener("change",applyFilters)
