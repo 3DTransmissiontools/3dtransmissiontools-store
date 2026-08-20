@@ -1,7 +1,18 @@
 {
   "name": "3dtransmissiontools-store",
   "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.19.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test",
+    "db:migrate": "node scripts/run-migration.js",
+    "db:seed": "node scripts/seed-products.js"
+  },
   "dependencies": {
-    "stripe": "^16.0.0"
+    "@neondatabase/serverless": "1.1.0",
+    "stripe": "22.5.0"
   }
 }

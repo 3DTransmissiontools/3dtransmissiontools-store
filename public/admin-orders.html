@@ -203,8 +203,6 @@ button:disabled {
 </div>
 
 <script>
-const PASSWORD_KEY = "ordersAdminPassword"
-
 const loginView =
   document.getElementById("login-view")
 
@@ -225,18 +223,6 @@ const ordersContainer =
 
 const messageElement =
   document.getElementById("message")
-
-function getPassword() {
-  return sessionStorage.getItem(PASSWORD_KEY) || ""
-}
-
-function setPassword(password) {
-  sessionStorage.setItem(PASSWORD_KEY, password)
-}
-
-function clearPassword() {
-  sessionStorage.removeItem(PASSWORD_KEY)
-}
 
 function showMessage(text, isError = false) {
   messageElement.textContent = text
@@ -485,14 +471,9 @@ function renderOrders(orders) {
 }
 
 async function adminFetch(url, options = {}) {
-  const password = getPassword()
-
   return fetch(url, {
     ...options,
-    headers: {
-      ...(options.headers || {}),
-      "X-Admin-Password": password
-    }
+    credentials: "same-origin"
   })
 }
 
@@ -505,10 +486,9 @@ async function loadOrders() {
     const data = await response.json()
 
     if (response.status === 401) {
-      clearPassword()
       setDashboardVisible(false)
       loginError.textContent =
-        "Incorrect admin password."
+        "Your admin session expired. Please sign in again."
       return
     }
 
@@ -582,28 +562,31 @@ async function signIn() {
   loginButton.textContent = "Signing In..."
   loginError.textContent = ""
 
-  setPassword(password)
-
   try {
-    const response = await adminFetch("/api/orders")
+    const response = await adminFetch(
+      "/api/admin-session",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ password })
+      }
+    )
+
+    const data = await response.json()
 
     if (!response.ok) {
-      clearPassword()
-
       loginError.textContent =
-        response.status === 401
-          ? "Incorrect admin password."
-          : "Unable to sign in."
+        data.error || "Unable to sign in."
 
       return
     }
 
-    const orders = await response.json()
-
+    passwordInput.value = ""
     setDashboardVisible(true)
-    renderOrders(orders)
+    await loadOrders()
   } catch (error) {
-    clearPassword()
     loginError.textContent =
       "Unable to connect to the order service."
   } finally {
@@ -629,16 +612,29 @@ document
 
 document
   .getElementById("logout-button")
-  .addEventListener("click", () => {
-    clearPassword()
+  .addEventListener("click", async () => {
+    await adminFetch("/api/admin-session", {
+      method: "DELETE"
+    })
     passwordInput.value = ""
     setDashboardVisible(false)
   })
 
-if (getPassword()) {
-  setDashboardVisible(true)
-  loadOrders()
+async function restoreSession() {
+  try {
+    const response = await adminFetch("/api/admin-session")
+    const data = await response.json()
+
+    if (response.ok && data.authenticated) {
+      setDashboardVisible(true)
+      await loadOrders()
+    }
+  } catch (error) {
+    console.error("Unable to restore admin session:", error)
+  }
 }
+
+restoreSession()
 </script>
 
 </body>

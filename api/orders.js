@@ -1,5 +1,6 @@
 import Stripe from "stripe";
-import crypto from "crypto";
+import { authorizeAdminRequest } from "../lib/admin-auth.js";
+import { enforceRateLimit } from "../lib/rate-limit.js";
 
 function getStripe() {
   const secretKey = process.env.STRIPE_SECRET_KEY;
@@ -8,57 +9,9 @@ function getStripe() {
     return null;
   }
 
-  return new Stripe(secretKey);
-}
-
-function safePasswordMatches(
-  suppliedPassword,
-  configuredPassword
-) {
-  if (
-    typeof suppliedPassword !== "string" ||
-    typeof configuredPassword !== "string" ||
-    suppliedPassword.length === 0 ||
-    configuredPassword.length === 0
-  ) {
-    return false;
-  }
-
-  const suppliedBuffer =
-    Buffer.from(suppliedPassword, "utf8");
-
-  const configuredBuffer =
-    Buffer.from(configuredPassword, "utf8");
-
-  if (
-    suppliedBuffer.length !==
-    configuredBuffer.length
-  ) {
-    return false;
-  }
-
-  return crypto.timingSafeEqual(
-    suppliedBuffer,
-    configuredBuffer
-  );
-}
-
-function isAuthorized(req) {
-  const configuredPassword =
-    process.env.ADMIN_PASSWORD;
-
-  const suppliedHeader =
-    req.headers["x-admin-password"];
-
-  const suppliedPassword =
-    Array.isArray(suppliedHeader)
-      ? suppliedHeader[0]
-      : suppliedHeader;
-
-  return safePasswordMatches(
-    suppliedPassword,
-    configuredPassword
-  );
+  return new Stripe(secretKey, {
+    apiVersion: "2026-02-25.clover"
+  });
 }
 
 function getShippingAddress(session) {
@@ -222,6 +175,7 @@ async function listCompletedSessions(stripe) {
   }
 
   return sessions.filter(session =>
+    session.metadata?.store_id === "3dtransmissiontools-store" &&
     session.status === "complete" &&
     (
       session.payment_status === "paid" ||
@@ -311,6 +265,8 @@ async function updateOrder(
     );
 
   const isPaid =
+    existingSession.metadata?.store_id ===
+      "3dtransmissiontools-store" &&
     existingSession.status === "complete" &&
     (
       existingSession.payment_status === "paid" ||
@@ -362,9 +318,9 @@ export default async function handler(req, res) {
     });
   }
 
-  if (!process.env.ADMIN_PASSWORD) {
+  if (!process.env.ADMIN_SESSION_SECRET) {
     console.error(
-      "ADMIN_PASSWORD is not configured."
+      "ADMIN_SESSION_SECRET is not configured."
     );
 
     return res.status(500).json({
@@ -373,13 +329,29 @@ export default async function handler(req, res) {
     });
   }
 
-  if (!isAuthorized(req)) {
+  const stateChanging = req.method !== "GET";
+
+  if (!authorizeAdminRequest(req, { stateChanging })) {
     return res.status(401).json({
       error: "Unauthorized."
     });
   }
 
   try {
+    const rateLimit = await enforceRateLimit(
+      req,
+      stateChanging ? "admin-write" : "admin-read",
+      stateChanging ? 30 : 60,
+      60
+    );
+
+    if (!rateLimit.allowed) {
+      res.setHeader("Retry-After", String(rateLimit.retryAfter));
+      return res.status(429).json({
+        error: "Too many requests. Please try again shortly."
+      });
+    }
+
     if (req.method === "GET") {
       const orders = await getOrders(stripe);
 

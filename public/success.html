@@ -163,7 +163,7 @@ async function verifyOrder() {
     document.getElementById("order-total").textContent =
       Number(data.amount_total || 0).toFixed(2)
 
-    const email = data.customer_email || ""
+    const email = data.customer_email_hint || ""
     const emailRow =
       document.getElementById("email-row")
 
@@ -176,6 +176,7 @@ async function verifyOrder() {
     }
 
     clearCart()
+    history.replaceState({}, document.title, "/success.html")
 
     document.getElementById("loading").hidden = true
     document.getElementById("success").hidden = false

@@ -125,7 +125,7 @@ return value
 }
 
 async function loadProducts(){
-const res = await fetch("products.json")
+const res = await fetch("/api/products")
 allProducts = await res.json()
 
 populateCategories()
@@ -215,7 +215,8 @@ card.className="card"
 
 const media=getProductMedia(product)
 const encodedMedia=encodeProductMedia(media)
-const safeId=String(product.id)
+const safeId=String(product.id || "").trim()
+if(!/^[A-Za-z0-9_-]{1,64}$/.test(safeId)) return
 const safeName=escapeHtml(product.name)
 const safeDescription=escapeHtml(product.description || "")
 const safeCategory=escapeHtml(product.category || "")
