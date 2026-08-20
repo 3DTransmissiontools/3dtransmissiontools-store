@@ -103,13 +103,16 @@ let preferredShipping = localStorage.getItem("preferredShippingMethod") || "grou
 
 async function loadProducts(){
 try{
-const res = await fetch("/products.json")
+const res = await fetch("/api/products")
 products = await res.json()
 syncSelectedShippingUI()
 renderCart()
 }catch(error){
 console.error("Failed to load products:", error)
-document.getElementById("cart-items").innerHTML = `<div class="empty">Unable to load cart items right now.</div>`
+const message = document.createElement("div")
+message.className = "empty"
+message.textContent = "Unable to load cart items right now."
+document.getElementById("cart-items").replaceChildren(message)
 }
 }
 
@@ -180,13 +183,16 @@ function renderCart(){
 const cart = getCart()
 const container = document.getElementById("cart-items")
 
-container.innerHTML = ""
+container.replaceChildren()
 
 let subtotal = 0
 let totalWeightOz = 0
 
 if(!cart.length){
-container.innerHTML = `<div class="empty">Your cart is empty.</div>`
+const emptyMessage = document.createElement("div")
+emptyMessage.className = "empty"
+emptyMessage.textContent = "Your cart is empty."
+container.appendChild(emptyMessage)
 document.getElementById("subtotal").textContent = "0.00"
 document.getElementById("estimated-weight").textContent = "0 oz"
 document.getElementById("estimated-ground").textContent = "$0.00"
@@ -210,24 +216,44 @@ totalWeightOz += itemWeight * itemQty
 const div = document.createElement("div")
 div.className = "item"
 
-div.innerHTML = `
-<div class="item-info">
-<div class="item-name">${product.name}</div>
-<div class="item-price">$${itemPrice.toFixed(2)} each</div>
-<div class="item-meta">Weight: ${itemWeight} oz each</div>
-</div>
+const itemInfo = document.createElement("div")
+itemInfo.className = "item-info"
 
-<div class="item-actions">
-<input
-type="number"
-value="${itemQty}"
-min="1"
-max="${product.quantity ?? 99}"
-onchange="updateQuantityAndRefresh('${item.id}', this.value)"
->
-<button onclick="removeItemAndRefresh('${item.id}')">Remove</button>
-</div>
-`
+const itemName = document.createElement("div")
+itemName.className = "item-name"
+itemName.textContent = String(product.name || "Product")
+
+const itemPriceElement = document.createElement("div")
+itemPriceElement.className = "item-price"
+itemPriceElement.textContent = `$${itemPrice.toFixed(2)} each`
+
+const itemMeta = document.createElement("div")
+itemMeta.className = "item-meta"
+itemMeta.textContent = `Weight: ${itemWeight} oz each`
+
+itemInfo.append(itemName, itemPriceElement, itemMeta)
+
+const itemActions = document.createElement("div")
+itemActions.className = "item-actions"
+
+const quantityInput = document.createElement("input")
+quantityInput.type = "number"
+quantityInput.value = String(itemQty)
+quantityInput.min = "1"
+quantityInput.max = String(Number(product.quantity) || 99)
+quantityInput.addEventListener("change", () => {
+updateQuantityAndRefresh(String(item.id), quantityInput.value)
+})
+
+const removeButton = document.createElement("button")
+removeButton.type = "button"
+removeButton.textContent = "Remove"
+removeButton.addEventListener("click", () => {
+removeItemAndRefresh(String(item.id))
+})
+
+itemActions.append(quantityInput, removeButton)
+div.append(itemInfo, itemActions)
 
 container.appendChild(div)
 })

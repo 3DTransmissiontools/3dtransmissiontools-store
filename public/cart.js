@@ -18,6 +18,7 @@ function getCart() {
     return parsedCart.filter(item =>
       item &&
       typeof item.id === "string" &&
+      /^[A-Za-z0-9_-]{1,64}$/.test(item.id) &&
       Number.isInteger(Number(item.quantity)) &&
       Number(item.quantity) >= 1
     )
@@ -41,7 +42,7 @@ function saveCart(cart) {
 async function addToCart(id, quantity) {
   try {
     const response =
-      await fetch("/products.json")
+      await fetch("/api/products")
 
     if (!response.ok) {
       throw new Error("Unable to load products")

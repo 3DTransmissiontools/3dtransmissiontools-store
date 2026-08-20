@@ -1,31 +1,48 @@
 import Stripe from "stripe";
+import {
+  completeInventoryReservation,
+  releaseInventory
+} from "../lib/inventory.js";
+
+const STORE_ID = "3dtransmissiontools-store";
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export const config = {
-  api: {
-    bodyParser: false
-  }
+  api: { bodyParser: false }
 };
 
 async function readRawBody(req) {
   const chunks = [];
 
   for await (const chunk of req) {
-    chunks.push(
-      Buffer.isBuffer(chunk)
-        ? chunk
-        : Buffer.from(chunk)
-    );
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
   }
 
   return Buffer.concat(chunks);
 }
 
 function getHeaderValue(value) {
-  if (Array.isArray(value)) {
-    return value[0];
-  }
+  return Array.isArray(value) ? value[0] : value;
+}
 
-  return value;
+function getReservationId(session) {
+  if (session.metadata?.store_id !== STORE_ID) return null;
+
+  const reservationId = session.metadata?.reservation_id;
+  return typeof reservationId === "string" && UUID_PATTERN.test(reservationId)
+    ? reservationId
+    : null;
+}
+
+function isPaid(session) {
+  return (
+    session.status === "complete" &&
+    (
+      session.payment_status === "paid" ||
+      session.payment_status === "no_payment_required"
+    )
+  );
 }
 
 export default async function handler(req, res) {
@@ -33,7 +50,6 @@ export default async function handler(req, res) {
 
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
-
     return res.status(405).json({
       received: false,
       code: "METHOD_NOT_ALLOWED",
@@ -41,51 +57,19 @@ export default async function handler(req, res) {
     });
   }
 
-  const stripeSecretKey =
-    process.env.STRIPE_SECRET_KEY;
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim();
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
 
-  const webhookSecret =
-    process.env.STRIPE_WEBHOOK_SECRET;
-
-  if (!stripeSecretKey) {
-    console.error(
-      "Webhook configuration error: " +
-      "STRIPE_SECRET_KEY is missing."
-    );
-
+  if (!stripeSecretKey || !webhookSecret) {
     return res.status(500).json({
       received: false,
-      code: "MISSING_STRIPE_SECRET_KEY",
-      error: "Stripe secret key is not configured."
+      code: "WEBHOOK_NOT_CONFIGURED",
+      error: "Stripe webhook is not configured."
     });
   }
 
-  if (!webhookSecret) {
-    console.error(
-      "Webhook configuration error: " +
-      "STRIPE_WEBHOOK_SECRET is missing."
-    );
-
-    return res.status(500).json({
-      received: false,
-      code: "MISSING_WEBHOOK_SECRET",
-      error: "Stripe webhook secret is not configured."
-    });
-  }
-
-  const signature = getHeaderValue(
-    req.headers["stripe-signature"]
-  );
-
-  if (
-    typeof signature !== "string" ||
-    signature.length === 0
-  ) {
-    console.error(
-      "Webhook request did not contain " +
-      "a Stripe-Signature header."
-    );
-
+  const signature = getHeaderValue(req.headers["stripe-signature"]);
+  if (typeof signature !== "string" || !signature) {
     return res.status(400).json({
       received: false,
       code: "MISSING_SIGNATURE",
@@ -93,39 +77,20 @@ export default async function handler(req, res) {
     });
   }
 
-  let stripe;
-
-  try {
-    stripe = new Stripe(stripeSecretKey);
-  } catch (error) {
-    console.error(
-      "Unable to initialize Stripe:",
-      error
-    );
-
-    return res.status(500).json({
-      received: false,
-      code: "STRIPE_INITIALIZATION_FAILED",
-      error: "Unable to initialize Stripe."
-    });
-  }
+  const stripe = new Stripe(stripeSecretKey, {
+    apiVersion: "2026-02-25.clover"
+  });
 
   let event;
 
   try {
-    const rawBody = await readRawBody(req);
-
     event = stripe.webhooks.constructEvent(
-      rawBody,
+      await readRawBody(req),
       signature,
       webhookSecret
     );
   } catch (error) {
-    console.error(
-      "Webhook signature verification failed:",
-      error?.message || error
-    );
-
+    console.error("Webhook signature verification failed:", error?.message);
     return res.status(400).json({
       received: false,
       code: "SIGNATURE_VERIFICATION_FAILED",
@@ -134,45 +99,36 @@ export default async function handler(req, res) {
   }
 
   try {
-    switch (event.type) {
-      case "checkout.session.completed": {
-        const session = event.data.object;
+    const sessionEventTypes = new Set([
+      "checkout.session.completed",
+      "checkout.session.async_payment_succeeded",
+      "checkout.session.async_payment_failed",
+      "checkout.session.expired"
+    ]);
 
-        console.log(
-          "Checkout completed:",
-          session.id
-        );
+    if (sessionEventTypes.has(event.type)) {
+      const session = event.data.object;
+      const reservationId = getReservationId(session);
 
-        break;
+      if (reservationId) {
+        if (
+          (event.type === "checkout.session.completed" ||
+            event.type === "checkout.session.async_payment_succeeded") &&
+          isPaid(session)
+        ) {
+          await completeInventoryReservation(
+            reservationId,
+            session.id,
+            event.id,
+            event.type
+          );
+        } else if (
+          event.type === "checkout.session.expired" ||
+          event.type === "checkout.session.async_payment_failed"
+        ) {
+          await releaseInventory(reservationId);
+        }
       }
-
-      case "checkout.session.async_payment_succeeded": {
-        const session = event.data.object;
-
-        console.log(
-          "Delayed payment succeeded:",
-          session.id
-        );
-
-        break;
-      }
-
-      case "checkout.session.async_payment_failed": {
-        const session = event.data.object;
-
-        console.warn(
-          "Delayed payment failed:",
-          session.id
-        );
-
-        break;
-      }
-
-      default:
-        console.log(
-          "Unhandled Stripe event:",
-          event.type
-        );
     }
 
     return res.status(200).json({
@@ -180,11 +136,7 @@ export default async function handler(req, res) {
       event_type: event.type
     });
   } catch (error) {
-    console.error(
-      "Webhook processing failed:",
-      error
-    );
-
+    console.error("Webhook processing failed:", error);
     return res.status(500).json({
       received: false,
       code: "EVENT_PROCESSING_FAILED",
