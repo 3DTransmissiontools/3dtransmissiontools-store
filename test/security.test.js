@@ -358,6 +358,13 @@ test("all customer pages link safely to the eBay store with a local logo", () =>
     assert.match(html, /src="\/ebay-logo\.png"/);
     assert.match(html, /target="_blank"/);
     assert.match(html, /rel="noopener noreferrer"/);
+
+    if (page === "success.html") {
+      assert.equal(
+        (html.match(/class="ebay-store-link"/g) || []).length,
+        2
+      );
+    }
   }
 
   assert.equal(logo.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
