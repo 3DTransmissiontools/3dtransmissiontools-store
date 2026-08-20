@@ -25,6 +25,11 @@ export default async function handler(req, res) {
         currency: String(product.currency || "USD"),
         category: String(product.category || ""),
         description: String(product.description || ""),
+        featured_rank: product.featured_rank !== null &&
+          product.featured_rank !== undefined &&
+          Number.isInteger(Number(product.featured_rank))
+          ? Number(product.featured_rank)
+          : null,
         images: Array.isArray(product.images)
           ? product.images.filter(url => isAllowedMediaUrl(url, "image"))
           : [],
@@ -48,3 +53,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "Unable to load products." });
   }
 }
+

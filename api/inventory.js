@@ -3,8 +3,10 @@ import {
   addRestock,
   createProduct,
   listAdminInventory,
+  parseFeaturedProductsRequest,
   parseProductRequest,
   parseRestockRequest,
+  setFeaturedProducts,
   setProductActive,
   updateProduct
 } from "../lib/admin-inventory.js";
@@ -48,6 +50,17 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "POST") {
+      if (req.body?.action === "set-featured-products") {
+        const input = parseFeaturedProductsRequest(req.body);
+
+        if (input.error) {
+          return res.status(400).json({ error: input.error });
+        }
+
+        const ids = await setFeaturedProducts(input);
+        return res.status(200).json({ success: true, ids });
+      }
+
       if (req.body?.action === "create-product") {
         const input = parseProductRequest(req.body.product);
 

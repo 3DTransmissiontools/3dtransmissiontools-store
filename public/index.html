@@ -48,7 +48,7 @@
   <div id="products" class="home-grid"></div>
 </section>
 
-<footer>Â© 2026 3D Transmission Tools</footer>
+<footer>© 2026 3D Transmission Tools</footer>
 
 <div
   id="lightbox"
@@ -62,14 +62,14 @@
       type="button"
       aria-label="Close gallery"
       onclick="closeProductMedia(event)"
-    >Ã—</button>
+    >×</button>
 
     <div id="lightbox-media" class="lightbox-media"></div>
 
     <div class="lightbox-controls">
-      <button type="button" onclick="previousProductMedia()">â€¹ Prev</button>
+      <button type="button" onclick="previousProductMedia()">‹ Prev</button>
       <div id="lightbox-counter" class="lightbox-counter">1 / 1</div>
-      <button type="button" onclick="nextProductMedia()">Next â€º</button>
+      <button type="button" onclick="nextProductMedia()">Next ›</button>
     </div>
 
     <div id="thumbnail-strip" class="thumbnail-strip"></div>
@@ -129,11 +129,18 @@ async function loadProducts() {
     if (!response.ok) throw new Error("Unable to load products.");
 
     const products = await response.json();
-    const featuredIds = ["21", "17", "9", "4"];
+    const rankedProducts = products
+      .filter(product => Number.isInteger(product.featured_rank))
+      .sort((first, second) =>
+        first.featured_rank - second.featured_rank
+      );
 
-    const featuredProducts = featuredIds
-      .map(id => products.find(product => String(product.id) === id))
-      .filter(Boolean);
+    const fallbackIds = ["21", "17", "9", "4"];
+    const featuredProducts = rankedProducts.length
+      ? rankedProducts.slice(0, 4)
+      : fallbackIds
+          .map(id => products.find(product => String(product.id) === id))
+          .filter(Boolean);
 
     featuredProducts.forEach(product => {
       const card = document.createElement("article");
@@ -162,7 +169,7 @@ async function loadProducts() {
           <div class="quantity-wrap">
             <div class="quantity-label">Qty</div>
             <div class="quantity-controls">
-              <button type="button" onclick="changeQty('qty-${safeId}', -1)" ${outOfStock ? "disabled" : ""}>âˆ’</button>
+              <button type="button" onclick="changeQty('qty-${safeId}', -1)" ${outOfStock ? "disabled" : ""}>−</button>
               <input id="qty-${safeId}" type="number" min="1" max="${Math.max(maxQty, 1)}" value="1" inputmode="numeric" ${outOfStock ? "disabled" : ""}>
               <button type="button" onclick="changeQty('qty-${safeId}', 1)" ${outOfStock ? "disabled" : ""}>+</button>
             </div>

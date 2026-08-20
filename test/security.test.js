@@ -14,8 +14,10 @@ import {
 import {
   addRestock,
   createProduct,
+  parseFeaturedProductsRequest,
   parseProductRequest,
   parseRestockRequest,
+  setFeaturedProducts,
   setProductActive,
   updateProduct
 } from "../lib/admin-inventory.js";
@@ -258,6 +260,50 @@ test("admin restocks only accept safe positive quantities", async () => {
   assert.deepEqual(queries[1].values, [12, "21"]);
 });
 
+test("featured products require 1 to 4 unique valid product IDs", async () => {
+  assert.deepEqual(
+    parseFeaturedProductsRequest({ ids: ["21", "17", "9", "4"] }),
+    { ids: ["21", "17", "9", "4"] }
+  );
+
+  for (const body of [
+    { ids: [] },
+    { ids: ["1", "2", "3", "4", "5"] },
+    { ids: ["21", "21"] },
+    { ids: ["<script>"] },
+    { ids: "21" }
+  ]) {
+    assert.equal(
+      typeof parseFeaturedProductsRequest(body).error,
+      "string"
+    );
+  }
+
+  const queries = [];
+  const sql = async (strings, ...values) => {
+    const query = strings.join("?").replace(/\s+/g, " ").trim();
+    queries.push({ query, values });
+
+    if (query.startsWith("SELECT id FROM products")) {
+      return ["21", "17", "9"].map(id => ({ id }));
+    }
+
+    return [];
+  };
+
+  const ids = await setFeaturedProducts(
+    { ids: ["21", "17", "9"] },
+    sql
+  );
+
+  assert.deepEqual(ids, ["21", "17", "9"]);
+  assert.match(queries[0].query, /^ALTER TABLE products/);
+  assert.match(queries[1].query, /^UPDATE products SET featured_rank/);
+  assert.match(queries[2].query, /^SELECT id FROM products/);
+  assert.match(queries[3].query, /^WITH requested AS/);
+  assert.ok(queries[3].values.includes('["21","17","9"]'));
+});
+
 test("admin product changes enforce the catalog schema", async () => {
   const validProduct = {
     id: "new-tool-24",
@@ -316,7 +362,7 @@ test("admin product changes enforce the catalog schema", async () => {
     /stock_available\s*=/
   );
   assert.match(queries[2].query, /SET active = \?/);
-  assert.deepEqual(queries[2].values, [false, "new-tool-24"]);
+  assert.deepEqual(queries[2].values, [false, false, "new-tool-24"]);
 });
 
 test("catalog source satisfies the server-side product schema", () => {
@@ -333,6 +379,22 @@ test("catalog source satisfies the server-side product schema", () => {
     assert.ok(Number(product.price) > 0);
     assert.ok(Number(product.weight_oz) > 0);
   }
+});
+
+test("homepage uses database-backed featured ranking with a safe fallback", () => {
+  const homepage = fs.readFileSync(
+    new URL("../public/index.html", import.meta.url),
+    "utf8"
+  );
+  const migration = fs.readFileSync(
+    new URL("../db/002_featured_products.sql", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(homepage, /product\.featured_rank/);
+  assert.match(homepage, /rankedProducts\.length/);
+  assert.match(migration, /ADD COLUMN IF NOT EXISTS featured_rank INTEGER/);
+  assert.match(migration, /products_featured_rank_check/);
 });
 
 test("all customer pages link safely to the eBay store with a local logo", () => {
