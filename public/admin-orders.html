@@ -123,6 +123,27 @@ button:disabled {
   margin-top: 0;
 }
 
+.inventory-card.inactive {
+  opacity: .72;
+  border: 1px dashed #777;
+}
+
+.product-status {
+  display: inline-block;
+  margin: 8px 0;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: #d9f4df;
+  color: #155724;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.product-status.inactive {
+  background: #eee;
+  color: #444;
+}
+
 .stock-count {
   font-size: 24px;
   font-weight: bold;
@@ -144,6 +165,47 @@ button:disabled {
   padding: 10px;
   margin-top: 6px;
   font-size: 16px;
+}
+
+.product-form-panel {
+  background: white;
+  padding: 22px;
+  margin: 18px 0;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.05);
+}
+
+.product-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.product-form-grid label {
+  font-weight: bold;
+}
+
+.product-form-grid input,
+.product-form-grid textarea {
+  width: 100%;
+  padding: 10px;
+  margin-top: 6px;
+  font: inherit;
+}
+
+.product-form-grid textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .order-grid {
@@ -200,6 +262,14 @@ button:disabled {
 
   .order-grid {
     grid-template-columns: 1fr;
+  }
+
+  .product-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .full-width {
+    grid-column: auto;
   }
 }
 </style>
@@ -293,6 +363,105 @@ button:disabled {
       Enter the number of newly received units. Restocking adds to the
       current available quantity; it never replaces it.
     </p>
+
+    <button id="new-product-button" type="button">
+      Add New Product
+    </button>
+
+    <section id="product-form-panel" class="product-form-panel hidden">
+      <h3 id="product-form-title">Add New Product</h3>
+
+      <form id="product-form">
+        <div class="product-form-grid">
+          <label>
+            Product ID / SKU
+            <input id="product-id" maxlength="64" required>
+          </label>
+
+          <label>
+            Product name
+            <input id="product-name" maxlength="160" required>
+          </label>
+
+          <label>
+            Price (USD)
+            <input
+              id="product-price"
+              type="number"
+              min="0.01"
+              max="100000"
+              step="0.01"
+              required
+            >
+          </label>
+
+          <label>
+            Starting quantity
+            <input
+              id="product-stock"
+              type="number"
+              min="0"
+              max="100000"
+              step="1"
+              required
+            >
+          </label>
+
+          <label>
+            Shipping weight (ounces)
+            <input
+              id="product-weight"
+              type="number"
+              min="0.01"
+              max="10000"
+              step="0.01"
+              required
+            >
+          </label>
+
+          <label>
+            Category
+            <input id="product-category" maxlength="80">
+          </label>
+
+          <label class="full-width">
+            Description
+            <textarea id="product-description" maxlength="2000"></textarea>
+          </label>
+
+          <label class="full-width">
+            Image URLs (one per line, maximum 10)
+            <textarea
+              id="product-images"
+              placeholder="https://i.ebayimg.com/images/..."
+              required
+            ></textarea>
+          </label>
+
+          <label class="full-width">
+            Optional local video path
+            <input
+              id="product-video"
+              maxlength="2048"
+              placeholder="/videos/example.mp4"
+            >
+          </label>
+        </div>
+
+        <button id="save-product-button" type="submit">
+          Create Product
+        </button>
+
+        <button
+          id="cancel-product-button"
+          class="secondary"
+          type="button"
+        >
+          Cancel
+        </button>
+      </form>
+    </section>
+
     <div id="inventory-count" class="muted"></div>
     <div id="inventory" class="inventory-grid"></div>
   </section>
@@ -335,10 +504,53 @@ const ordersTab =
 const inventoryTab =
   document.getElementById("inventory-tab")
 
+const newProductButton =
+  document.getElementById("new-product-button")
+
+const productFormPanel =
+  document.getElementById("product-form-panel")
+
+const productForm =
+  document.getElementById("product-form")
+
+const productFormTitle =
+  document.getElementById("product-form-title")
+
+const saveProductButton =
+  document.getElementById("save-product-button")
+
+const productIdInput =
+  document.getElementById("product-id")
+
+const productNameInput =
+  document.getElementById("product-name")
+
+const productPriceInput =
+  document.getElementById("product-price")
+
+const productStockInput =
+  document.getElementById("product-stock")
+
+const productWeightInput =
+  document.getElementById("product-weight")
+
+const productCategoryInput =
+  document.getElementById("product-category")
+
+const productDescriptionInput =
+  document.getElementById("product-description")
+
+const productImagesInput =
+  document.getElementById("product-images")
+
+const productVideoInput =
+  document.getElementById("product-video")
+
 const messageElement =
   document.getElementById("message")
 
 let activeSection = "orders"
+let editingProductId = null
 
 function showMessage(text, isError = false) {
   messageElement.textContent = text
@@ -601,6 +813,7 @@ function setActiveSection(section) {
 function createInventoryCard(product) {
   const card = document.createElement("section")
   card.className = "inventory-card"
+  card.classList.toggle("inactive", !product.active)
 
   const title = document.createElement("h3")
   title.textContent = product.name
@@ -611,63 +824,102 @@ function createInventoryCard(product) {
   id.textContent = `Product ID: ${product.id}`
   card.appendChild(id)
 
+  const status = document.createElement("span")
+  status.className = "product-status"
+  status.classList.toggle("inactive", !product.active)
+  status.textContent = product.active ? "Active" : "Inactive"
+  card.appendChild(status)
+
   const stock = document.createElement("div")
   stock.className = "stock-count"
   stock.textContent = `${product.stock_available} available`
   card.appendChild(stock)
 
-  const controls = document.createElement("div")
-  controls.className = "restock-controls"
+  appendTextLine(
+    card,
+    "Price",
+    formatMoney(Number(product.unit_amount || 0) / 100)
+  )
+  appendTextLine(card, "Weight", `${product.weight_oz} oz`)
 
-  const label = document.createElement("label")
-  label.textContent = "New units to add"
+  if (product.active) {
+    const controls = document.createElement("div")
+    controls.className = "restock-controls"
 
-  const input = document.createElement("input")
-  input.className = "restock-input"
-  input.type = "number"
-  input.min = "1"
-  input.max = "1000"
-  input.step = "1"
-  input.inputMode = "numeric"
-  input.placeholder = "Quantity"
-  input.setAttribute("aria-label", `Restock quantity for ${product.name}`)
+    const label = document.createElement("label")
+    label.textContent = "New units to add"
 
-  label.appendChild(input)
-  controls.appendChild(label)
+    const input = document.createElement("input")
+    input.className = "restock-input"
+    input.type = "number"
+    input.min = "1"
+    input.max = "1000"
+    input.step = "1"
+    input.inputMode = "numeric"
+    input.placeholder = "Quantity"
+    input.setAttribute("aria-label", `Restock quantity for ${product.name}`)
 
-  const button = document.createElement("button")
-  button.type = "button"
-  button.textContent = "Add Stock"
+    label.appendChild(input)
+    controls.appendChild(label)
 
-  button.addEventListener("click", async () => {
-    const quantity = input.valueAsNumber
+    const button = document.createElement("button")
+    button.type = "button"
+    button.textContent = "Add Stock"
 
-    if (
-      !Number.isInteger(quantity) ||
-      quantity < 1 ||
-      quantity > 1000
-    ) {
-      showMessage(
-        "Enter a whole-number restock quantity from 1 to 1000.",
-        true
+    button.addEventListener("click", async () => {
+      const quantity = input.valueAsNumber
+
+      if (
+        !Number.isInteger(quantity) ||
+        quantity < 1 ||
+        quantity > 1000
+      ) {
+        showMessage(
+          "Enter a whole-number restock quantity from 1 to 1000.",
+          true
+        )
+        input.focus()
+        return
+      }
+
+      const confirmed = window.confirm(
+        `Add ${quantity} unit${quantity === 1 ? "" : "s"} ` +
+        `to ${product.name}? Current available stock is ` +
+        `${product.stock_available}.`
       )
-      input.focus()
-      return
-    }
 
-    const confirmed = window.confirm(
-      `Add ${quantity} unit${quantity === 1 ? "" : "s"} ` +
-      `to ${product.name}? Current available stock is ` +
-      `${product.stock_available}.`
-    )
+      if (!confirmed) return
 
-    if (!confirmed) return
+      await addStock(product, quantity, button)
+    })
 
-    await addStock(product, quantity, button)
+    controls.appendChild(button)
+    card.appendChild(controls)
+  }
+
+  const actions = document.createElement("div")
+  actions.className = "card-actions"
+
+  const editButton = document.createElement("button")
+  editButton.type = "button"
+  editButton.className = "secondary"
+  editButton.textContent = "Edit Product"
+  editButton.addEventListener("click", () => openProductForm(product))
+  actions.appendChild(editButton)
+
+  const statusButton = document.createElement("button")
+  statusButton.type = "button"
+  statusButton.className = product.active ? "danger" : "secondary"
+  statusButton.textContent = product.active ? "Deactivate" : "Reactivate"
+  statusButton.addEventListener("click", async () => {
+    const verb = product.active ? "Deactivate" : "Reactivate"
+
+    if (!window.confirm(`${verb} ${product.name}?`)) return
+    await setProductStatus(product, !product.active, statusButton)
   })
+  actions.appendChild(statusButton)
+  card.appendChild(actions)
 
-  controls.appendChild(button)
-  card.appendChild(controls)
   return card
 }
 
@@ -680,7 +932,7 @@ function renderInventory(products) {
     `${activeProducts.length} active product` +
     `${activeProducts.length === 1 ? "" : "s"}`
 
-  if (!activeProducts.length) {
+  if (!products.length) {
     const empty = document.createElement("div")
     empty.className = "message"
     empty.textContent = "No active products were found."
@@ -688,9 +940,145 @@ function renderInventory(products) {
     return
   }
 
-  activeProducts.forEach(product => {
+  products.forEach(product => {
     inventoryContainer.appendChild(createInventoryCard(product))
   })
+}
+
+function closeProductForm() {
+  editingProductId = null
+  productForm.reset()
+  productIdInput.disabled = false
+  productStockInput.disabled = false
+  productFormPanel.classList.add("hidden")
+  hideMessage()
+}
+
+function openProductForm(product = null) {
+  hideMessage()
+  editingProductId = product?.id || null
+  productForm.reset()
+
+  if (product) {
+    productFormTitle.textContent = "Edit Product"
+    saveProductButton.textContent = "Save Product"
+    productIdInput.value = product.id
+    productIdInput.disabled = true
+    productNameInput.value = product.name || ""
+    productPriceInput.value = (
+      Number(product.unit_amount || 0) / 100
+    ).toFixed(2)
+    productStockInput.value = String(product.stock_available ?? 0)
+    productStockInput.disabled = true
+    productWeightInput.value = String(product.weight_oz || "")
+    productCategoryInput.value = product.category || ""
+    productDescriptionInput.value = product.description || ""
+    productImagesInput.value = Array.isArray(product.images)
+      ? product.images.join("\n")
+      : ""
+    productVideoInput.value = product.video || ""
+  } else {
+    productFormTitle.textContent = "Add New Product"
+    saveProductButton.textContent = "Create Product"
+    productIdInput.disabled = false
+    productStockInput.disabled = false
+  }
+
+  productFormPanel.classList.remove("hidden")
+  productFormPanel.scrollIntoView({ behavior: "smooth", block: "start" })
+  ;(product ? productNameInput : productIdInput).focus()
+}
+
+function readProductForm() {
+  return {
+    id: productIdInput.value.trim(),
+    name: productNameInput.value.trim(),
+    price: productPriceInput.valueAsNumber,
+    stock: productStockInput.valueAsNumber,
+    weight_oz: productWeightInput.valueAsNumber,
+    category: productCategoryInput.value.trim(),
+    description: productDescriptionInput.value.trim(),
+    images: productImagesInput.value
+      .split(/\r?\n/)
+      .map(value => value.trim())
+      .filter(Boolean),
+    video: productVideoInput.value.trim()
+  }
+}
+
+async function saveProduct() {
+  const product = readProductForm()
+  const editing = Boolean(editingProductId)
+  const action = editing ? "update-product" : "create-product"
+  const confirmation = editing
+    ? `Save catalog changes to ${product.name}? Inventory quantity will not change.`
+    : `Create ${product.name} with ${product.stock} unit` +
+      `${product.stock === 1 ? "" : "s"} of starting inventory?`
+
+  if (!window.confirm(confirmation)) return
+
+  const originalText = saveProductButton.textContent
+  saveProductButton.disabled = true
+  saveProductButton.textContent = "Saving..."
+
+  try {
+    const response = await adminFetch("/api/inventory", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, product })
+    })
+    const data = await response.json()
+
+    if (response.status === 401) {
+      setDashboardVisible(false)
+      loginError.textContent =
+        "Your admin session expired. Please sign in again."
+      return
+    }
+
+    if (!response.ok) {
+      throw new Error(data.error || "Unable to save product.")
+    }
+
+    closeProductForm()
+    await loadInventory()
+    showMessage(editing ? "Product updated." : "Product created.")
+  } catch (error) {
+    showMessage(error.message, true)
+  } finally {
+    saveProductButton.disabled = false
+    saveProductButton.textContent = originalText
+  }
+}
+
+async function setProductStatus(product, active, button) {
+  const originalText = button.textContent
+  button.disabled = true
+  button.textContent = "Saving..."
+
+  try {
+    const response = await adminFetch("/api/inventory", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "set-product-active",
+        id: product.id,
+        active
+      })
+    })
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.error || "Unable to update product status.")
+    }
+
+    await loadInventory()
+    showMessage(active ? "Product reactivated." : "Product deactivated.")
+  } catch (error) {
+    showMessage(error.message, true)
+    button.disabled = false
+    button.textContent = originalText
+  }
 }
 
 async function adminFetch(url, options = {}) {
@@ -923,6 +1311,19 @@ inventoryTab.addEventListener("click", async () => {
   await loadInventory()
 })
 
+newProductButton.addEventListener("click", () => {
+  openProductForm()
+})
+
+document
+  .getElementById("cancel-product-button")
+  .addEventListener("click", closeProductForm)
+
+productForm.addEventListener("submit", async event => {
+  event.preventDefault()
+  await saveProduct()
+})
+
 document
   .getElementById("logout-button")
   .addEventListener("click", async () => {
@@ -930,6 +1331,7 @@ document
       method: "DELETE"
     })
     passwordInput.value = ""
+    closeProductForm()
     setActiveSection("orders")
     setDashboardVisible(false)
   })

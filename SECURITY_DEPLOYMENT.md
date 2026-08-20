@@ -21,7 +21,9 @@ two database commands. Standalone Node scripts do not automatically load
 `.env.local`.
 
 The seed only uses `products.json` quantities for new database rows. Re-running
-the seed updates catalog metadata without resetting live inventory.
+the seed updates catalog metadata without resetting live inventory. It also
+preserves products created through the admin dashboard; deactivate those
+products from the dashboard when they should no longer appear in the store.
 
 ## 2. Configure secrets
 
@@ -69,3 +71,4 @@ Store the endpoint signing secret as `STRIPE_WEBHOOK_SECRET`.
 Do not roll back only the application code after the database becomes the
 inventory authority. If a rollback is required, disable checkout first so the
 static catalog and database cannot accept conflicting orders.
+
