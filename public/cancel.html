@@ -1,14 +1,30 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Order Cancelled</title>
+<link rel="stylesheet" href="/styles.css">
 </head>
 <body>
 
-<h1>Order Cancelled</h1>
-<p>Your checkout was cancelled.</p>
+<main class="checkout-message">
+  <h1>Order Cancelled</h1>
+  <p>Your checkout was cancelled.</p>
 
-<a href="/">Return to Store</a>
+  <div class="checkout-actions">
+    <a class="button-link" href="/">Return to Store</a>
+    <a class="ebay-store-link"
+       href="https://www.ebay.com/usr/3dtransmissiontools"
+       target="_blank"
+       rel="noopener noreferrer"
+       aria-label="Visit the 3D Transmission Tools eBay Store">
+      <img src="/ebay-logo.png" alt="" width="72" height="31">
+      <span>Store</span>
+    </a>
+  </div>
+</main>
 
 </body>
 </html>
+
