@@ -12,6 +12,10 @@ import {
   reserveInventory
 } from "../lib/inventory.js";
 import {
+  addRestock,
+  parseRestockRequest
+} from "../lib/admin-inventory.js";
+import {
   getConfiguredSiteUrl,
   isAllowedMediaUrl,
   isValidProductId,
@@ -171,6 +175,43 @@ test("expired reservations are released before stock is read or reserved", async
     /release_expired_inventory_reservations/
   );
   assert.match(reservationQueries[1], /reserve_inventory/);
+});
+
+test("admin restocks only accept safe positive quantities", async () => {
+  assert.deepEqual(
+    parseRestockRequest({ id: "21", quantity: 12 }),
+    { id: "21", quantity: 12 }
+  );
+
+  for (const body of [
+    { id: "<script>", quantity: 1 },
+    { id: "21", quantity: 0 },
+    { id: "21", quantity: -1 },
+    { id: "21", quantity: 1.5 },
+    { id: "21", quantity: 1001 },
+    { id: "21", quantity: "not-a-number" }
+  ]) {
+    assert.equal(typeof parseRestockRequest(body).error, "string");
+  }
+
+  const queries = [];
+  const sql = async (strings, ...values) => {
+    const query = strings.join("?").replace(/\s+/g, " ").trim();
+    queries.push({ query, values });
+
+    if (query.startsWith("UPDATE products")) {
+      return [{ id: "21", name: "Test Tool", stock_available: 17 }];
+    }
+
+    return [];
+  };
+
+  const product = await addRestock("21", 12, sql);
+
+  assert.equal(product.stock_available, 17);
+  assert.match(queries[0].query, /release_expired_inventory_reservations/);
+  assert.match(queries[1].query, /stock_available = stock_available \+ \?/);
+  assert.deepEqual(queries[1].values, [12, "21"]);
 });
 
 test("catalog source satisfies the server-side product schema", () => {
