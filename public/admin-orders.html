@@ -7,7 +7,7 @@
   content="width=device-width, initial-scale=1"
 >
 
-<title>Orders Dashboard</title>
+<title>Store Admin Dashboard</title>
 
 <style>
 * {
@@ -85,6 +85,67 @@ button:disabled {
   box-shadow: 0 2px 10px rgba(0,0,0,.05);
 }
 
+.admin-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #ccc;
+}
+
+.admin-tabs button {
+  margin: 0 0 -1px;
+  border-radius: 6px 6px 0 0;
+  background: #666;
+}
+
+.admin-tabs button.active {
+  background: #111;
+}
+
+.inventory-help {
+  margin: 0 0 18px;
+}
+
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.inventory-card {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.05);
+}
+
+.inventory-card h3 {
+  margin-top: 0;
+}
+
+.stock-count {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 12px 0;
+}
+
+.restock-controls {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+}
+
+.restock-controls label {
+  flex: 1;
+}
+
+.restock-input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 6px;
+  font-size: 16px;
+}
+
 .order-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -147,7 +208,7 @@ button:disabled {
 <body>
 
 <div id="login-view" class="login">
-  <h1>Orders Dashboard</h1>
+  <h1>Store Admin Dashboard</h1>
   <p>Enter your admin password.</p>
 
   <input
@@ -171,8 +232,8 @@ button:disabled {
 <div id="dashboard-view" class="page hidden">
   <div class="header">
     <div>
-      <h1>Orders</h1>
-      <div id="order-count" class="muted"></div>
+      <h1>Store Admin</h1>
+      <div class="muted">Manage orders and inventory</div>
     </div>
 
     <div>
@@ -193,13 +254,48 @@ button:disabled {
     </div>
   </div>
 
+  <nav class="admin-tabs" aria-label="Admin sections">
+    <button
+      id="orders-tab"
+      class="active"
+      type="button"
+      aria-controls="orders-panel"
+      aria-selected="true"
+    >
+      Orders
+    </button>
+
+    <button
+      id="inventory-tab"
+      type="button"
+      aria-controls="inventory-panel"
+      aria-selected="false"
+    >
+      Inventory
+    </button>
+  </nav>
+
   <div
     id="message"
     class="message hidden"
     role="status"
   ></div>
 
-  <div id="orders"></div>
+  <section id="orders-panel">
+    <h2>Orders</h2>
+    <div id="order-count" class="muted"></div>
+    <div id="orders"></div>
+  </section>
+
+  <section id="inventory-panel" class="hidden">
+    <h2>Inventory</h2>
+    <p class="inventory-help">
+      Enter the number of newly received units. Restocking adds to the
+      current available quantity; it never replaces it.
+    </p>
+    <div id="inventory-count" class="muted"></div>
+    <div id="inventory" class="inventory-grid"></div>
+  </section>
 </div>
 
 <script>
@@ -221,8 +317,28 @@ const loginError =
 const ordersContainer =
   document.getElementById("orders")
 
+const inventoryContainer =
+  document.getElementById("inventory")
+
+const inventoryCount =
+  document.getElementById("inventory-count")
+
+const ordersPanel =
+  document.getElementById("orders-panel")
+
+const inventoryPanel =
+  document.getElementById("inventory-panel")
+
+const ordersTab =
+  document.getElementById("orders-tab")
+
+const inventoryTab =
+  document.getElementById("inventory-tab")
+
 const messageElement =
   document.getElementById("message")
+
+let activeSection = "orders"
 
 function showMessage(text, isError = false) {
   messageElement.textContent = text
@@ -304,7 +420,7 @@ function createItemsList(items = []) {
     const listItem = document.createElement("li")
 
     listItem.textContent =
-      `${item.name} — Qty ${item.quantity} — ` +
+      `${item.name} â€” Qty ${item.quantity} â€” ` +
       `${formatMoney(item.price)}`
 
     list.appendChild(listItem)
@@ -470,6 +586,113 @@ function renderOrders(orders) {
   })
 }
 
+function setActiveSection(section) {
+  activeSection = section === "inventory" ? "inventory" : "orders"
+  const showInventory = activeSection === "inventory"
+
+  ordersPanel.classList.toggle("hidden", showInventory)
+  inventoryPanel.classList.toggle("hidden", !showInventory)
+  ordersTab.classList.toggle("active", !showInventory)
+  inventoryTab.classList.toggle("active", showInventory)
+  ordersTab.setAttribute("aria-selected", String(!showInventory))
+  inventoryTab.setAttribute("aria-selected", String(showInventory))
+}
+
+function createInventoryCard(product) {
+  const card = document.createElement("section")
+  card.className = "inventory-card"
+
+  const title = document.createElement("h3")
+  title.textContent = product.name
+  card.appendChild(title)
+
+  const id = document.createElement("div")
+  id.className = "muted"
+  id.textContent = `Product ID: ${product.id}`
+  card.appendChild(id)
+
+  const stock = document.createElement("div")
+  stock.className = "stock-count"
+  stock.textContent = `${product.stock_available} available`
+  card.appendChild(stock)
+
+  const controls = document.createElement("div")
+  controls.className = "restock-controls"
+
+  const label = document.createElement("label")
+  label.textContent = "New units to add"
+
+  const input = document.createElement("input")
+  input.className = "restock-input"
+  input.type = "number"
+  input.min = "1"
+  input.max = "1000"
+  input.step = "1"
+  input.inputMode = "numeric"
+  input.placeholder = "Quantity"
+  input.setAttribute("aria-label", `Restock quantity for ${product.name}`)
+
+  label.appendChild(input)
+  controls.appendChild(label)
+
+  const button = document.createElement("button")
+  button.type = "button"
+  button.textContent = "Add Stock"
+
+  button.addEventListener("click", async () => {
+    const quantity = input.valueAsNumber
+
+    if (
+      !Number.isInteger(quantity) ||
+      quantity < 1 ||
+      quantity > 1000
+    ) {
+      showMessage(
+        "Enter a whole-number restock quantity from 1 to 1000.",
+        true
+      )
+      input.focus()
+      return
+    }
+
+    const confirmed = window.confirm(
+      `Add ${quantity} unit${quantity === 1 ? "" : "s"} ` +
+      `to ${product.name}? Current available stock is ` +
+      `${product.stock_available}.`
+    )
+
+    if (!confirmed) return
+
+    await addStock(product, quantity, button)
+  })
+
+  controls.appendChild(button)
+  card.appendChild(controls)
+  return card
+}
+
+function renderInventory(products) {
+  inventoryContainer.replaceChildren()
+
+  const activeProducts = products.filter(product => product.active)
+
+  inventoryCount.textContent =
+    `${activeProducts.length} active product` +
+    `${activeProducts.length === 1 ? "" : "s"}`
+
+  if (!activeProducts.length) {
+    const empty = document.createElement("div")
+    empty.className = "message"
+    empty.textContent = "No active products were found."
+    inventoryContainer.appendChild(empty)
+    return
+  }
+
+  activeProducts.forEach(product => {
+    inventoryContainer.appendChild(createInventoryCard(product))
+  })
+}
+
 async function adminFetch(url, options = {}) {
   return fetch(url, {
     ...options,
@@ -503,6 +726,85 @@ async function loadOrders() {
   } catch (error) {
     showMessage(error.message, true)
   }
+}
+
+async function loadInventory() {
+  hideMessage()
+  showMessage("Loading inventory...")
+
+  try {
+    const response = await adminFetch("/api/inventory")
+    const data = await response.json()
+
+    if (response.status === 401) {
+      setDashboardVisible(false)
+      loginError.textContent =
+        "Your admin session expired. Please sign in again."
+      return
+    }
+
+    if (!response.ok) {
+      throw new Error(data.error || "Unable to load inventory.")
+    }
+
+    hideMessage()
+    renderInventory(data)
+  } catch (error) {
+    showMessage(error.message, true)
+  }
+}
+
+async function addStock(product, quantity, button) {
+  const originalText = button.textContent
+  button.disabled = true
+  button.textContent = "Adding..."
+
+  try {
+    const response = await adminFetch("/api/inventory", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        id: product.id,
+        quantity
+      })
+    })
+
+    const data = await response.json()
+
+    if (response.status === 401) {
+      setDashboardVisible(false)
+      loginError.textContent =
+        "Your admin session expired. Please sign in again."
+      return
+    }
+
+    if (!response.ok) {
+      throw new Error(data.error || "Unable to add inventory.")
+    }
+
+    await loadInventory()
+
+    showMessage(
+      `Added ${quantity} unit${quantity === 1 ? "" : "s"} to ` +
+      `${data.product.name}. New available stock: ` +
+      `${data.product.stock_available}.`
+    )
+  } catch (error) {
+    showMessage(error.message, true)
+    button.disabled = false
+    button.textContent = originalText
+  }
+}
+
+async function loadActiveSection() {
+  if (activeSection === "inventory") {
+    await loadInventory()
+    return
+  }
+
+  await loadOrders()
 }
 
 async function updateOrder(
@@ -585,7 +887,8 @@ async function signIn() {
 
     passwordInput.value = ""
     setDashboardVisible(true)
-    await loadOrders()
+    setActiveSection("orders")
+    await loadActiveSection()
   } catch (error) {
     loginError.textContent =
       "Unable to connect to the order service."
@@ -608,7 +911,17 @@ passwordInput.addEventListener(
 
 document
   .getElementById("refresh-button")
-  .addEventListener("click", loadOrders)
+  .addEventListener("click", loadActiveSection)
+
+ordersTab.addEventListener("click", async () => {
+  setActiveSection("orders")
+  await loadOrders()
+})
+
+inventoryTab.addEventListener("click", async () => {
+  setActiveSection("inventory")
+  await loadInventory()
+})
 
 document
   .getElementById("logout-button")
@@ -617,6 +930,7 @@ document
       method: "DELETE"
     })
     passwordInput.value = ""
+    setActiveSection("orders")
     setDashboardVisible(false)
   })
 
@@ -627,7 +941,7 @@ async function restoreSession() {
 
     if (response.ok && data.authenticated) {
       setDashboardVisible(true)
-      await loadOrders()
+      await loadActiveSection()
     }
   } catch (error) {
     console.error("Unable to restore admin session:", error)
@@ -639,3 +953,4 @@ restoreSession()
 
 </body>
 </html>
+
