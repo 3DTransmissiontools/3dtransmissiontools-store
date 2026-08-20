@@ -335,6 +335,23 @@ test("catalog source satisfies the server-side product schema", () => {
   }
 });
 
+test("homepage links safely to the eBay store with a local logo", () => {
+  const homepage = fs.readFileSync(
+    new URL("../public/index.html", import.meta.url),
+    "utf8"
+  );
+  const logo = fs.readFileSync(
+    new URL("../public/ebay-logo.png", import.meta.url)
+  );
+
+  assert.match(homepage, /https:\/\/www\.ebay\.com\/usr\/3dtransmissiontools/);
+  assert.match(homepage, /class="ebay-store-link"/);
+  assert.match(homepage, /src="\/ebay-logo\.png"/);
+  assert.match(homepage, /target="_blank"/);
+  assert.match(homepage, /rel="noopener noreferrer"/);
+  assert.equal(logo.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+});
+
 test("Vercel security header configuration parses", () => {
   const config = JSON.parse(
     fs.readFileSync(new URL("../vercel.json", import.meta.url), "utf8")
