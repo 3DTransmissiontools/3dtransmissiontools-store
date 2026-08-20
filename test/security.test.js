@@ -8,6 +8,10 @@ import {
 } from "../lib/admin-auth.js";
 import { getUniqueCartItems } from "../api/create-checkout-session.js";
 import {
+  listProducts,
+  reserveInventory
+} from "../lib/inventory.js";
+import {
   getConfiguredSiteUrl,
   isAllowedMediaUrl,
   isValidProductId,
@@ -126,6 +130,49 @@ test("admin passwords require a nontrivial configured value", () => {
   assert.equal(passwordMatches("short"), false);
 });
 
+test("expired reservations are released before stock is read or reserved", async () => {
+  const catalogQueries = [];
+  const catalogSql = async strings => {
+    const query = strings.join("?").replace(/\s+/g, " ").trim();
+    catalogQueries.push(query);
+    return query.includes("FROM products") ? [{ id: "21" }] : [];
+  };
+
+  assert.deepEqual(await listProducts(catalogSql), [{ id: "21" }]);
+  assert.match(catalogQueries[0], /release_expired_inventory_reservations/);
+  assert.match(catalogQueries[1], /FROM products/);
+
+  const reservationQueries = [];
+  const reservationId = "00000000-0000-4000-8000-000000000021";
+  const reservationSql = async strings => {
+    const query = strings.join("?").replace(/\s+/g, " ").trim();
+    reservationQueries.push(query);
+
+    if (query.includes("AS reservation_id")) {
+      return [{ reservation_id: reservationId }];
+    }
+
+    if (query.includes("FROM inventory_reservation_items")) {
+      return [{ id: "21", quantity: 1 }];
+    }
+
+    return [];
+  };
+
+  const reservation = await reserveInventory(
+    [{ id: "21", quantity: 1 }],
+    new Date(Date.now() + 60_000),
+    reservationSql
+  );
+
+  assert.equal(reservation.reservationId, reservationId);
+  assert.match(
+    reservationQueries[0],
+    /release_expired_inventory_reservations/
+  );
+  assert.match(reservationQueries[1], /reserve_inventory/);
+});
+
 test("catalog source satisfies the server-side product schema", () => {
   const products = JSON.parse(
     fs.readFileSync(new URL("../public/products.json", import.meta.url), "utf8")
@@ -154,3 +201,4 @@ test("Vercel security header configuration parses", () => {
   assert.equal(headers["X-Content-Type-Options"], "nosniff");
   assert.equal(headers["X-Frame-Options"], "DENY");
 });
+
