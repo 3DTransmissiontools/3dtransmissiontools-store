@@ -4,13 +4,10 @@ import { fileURLToPath } from "url";
 import { Pool } from "@neondatabase/serverless";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
-const migrationPath = path.join(
-  scriptDirectory,
-  "..",
-  "db",
-  "001_security_inventory.sql"
-);
-const migration = await fs.readFile(migrationPath, "utf8");
+const migrationDirectory = path.join(scriptDirectory, "..", "db");
+const migrationFiles = (await fs.readdir(migrationDirectory))
+  .filter(file => /^\d+_.+\.sql$/.test(file))
+  .sort();
 const databaseUrl = process.env.DATABASE_URL?.trim();
 
 if (!databaseUrl) {
@@ -18,6 +15,17 @@ if (!databaseUrl) {
 }
 
 const pool = new Pool({ connectionString: databaseUrl });
-await pool.query(migration);
+
+for (const file of migrationFiles) {
+  const migration = await fs.readFile(
+    path.join(migrationDirectory, file),
+    "utf8"
+  );
+
+  await pool.query(migration);
+  console.log(`Applied ${file}.`);
+}
+
 await pool.end();
-console.log("Applied inventory and security migration.");
+console.log(`Applied ${migrationFiles.length} database migration(s).`);
+

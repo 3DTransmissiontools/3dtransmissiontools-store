@@ -106,6 +106,62 @@ button:disabled {
   margin: 0 0 18px;
 }
 
+.featured-panel {
+  margin: 18px 0;
+  padding: 20px;
+  border-radius: 10px;
+  background: white;
+  box-shadow: 0 2px 10px rgba(0,0,0,.05);
+}
+
+.featured-panel h3 {
+  margin-top: 0;
+}
+
+.featured-list {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.featured-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 7px;
+}
+
+.featured-row-name {
+  flex: 1;
+  font-weight: bold;
+}
+
+.featured-row button {
+  margin: 0;
+  padding: 7px 10px;
+}
+
+.featured-add-controls {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.featured-add-controls label {
+  flex: 1 1 280px;
+  font-weight: bold;
+}
+
+.featured-add-controls select {
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px;
+  font: inherit;
+}
+
 .inventory-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -364,6 +420,31 @@ button:disabled {
       current available quantity; it never replaces it.
     </p>
 
+    <section class="featured-panel" aria-labelledby="featured-title">
+      <h3 id="featured-title">Homepage Featured Products</h3>
+      <p class="muted">
+        Choose 1 to 4 active products. Their order below is the order shown
+        on the homepage.
+      </p>
+
+      <div id="featured-list" class="featured-list"></div>
+
+      <div class="featured-add-controls">
+        <label>
+          Add an active product
+          <select id="featured-product-select"></select>
+        </label>
+
+        <button id="add-featured-button" type="button" class="secondary">
+          Add Product
+        </button>
+
+        <button id="save-featured-button" type="button">
+          Save Featured Products
+        </button>
+      </div>
+    </section>
+
     <button id="new-product-button" type="button">
       Add New Product
     </button>
@@ -507,6 +588,18 @@ const inventoryTab =
 const newProductButton =
   document.getElementById("new-product-button")
 
+const featuredList =
+  document.getElementById("featured-list")
+
+const featuredProductSelect =
+  document.getElementById("featured-product-select")
+
+const addFeaturedButton =
+  document.getElementById("add-featured-button")
+
+const saveFeaturedButton =
+  document.getElementById("save-featured-button")
+
 const productFormPanel =
   document.getElementById("product-form-panel")
 
@@ -551,6 +644,8 @@ const messageElement =
 
 let activeSection = "orders"
 let editingProductId = null
+let inventoryProducts = []
+let featuredProductIds = []
 
 function showMessage(text, isError = false) {
   messageElement.textContent = text
@@ -632,7 +727,7 @@ function createItemsList(items = []) {
     const listItem = document.createElement("li")
 
     listItem.textContent =
-      `${item.name} â€” Qty ${item.quantity} â€” ` +
+      `${item.name} — Qty ${item.quantity} — ` +
       `${formatMoney(item.price)}`
 
     list.appendChild(listItem)
@@ -810,6 +905,95 @@ function setActiveSection(section) {
   inventoryTab.setAttribute("aria-selected", String(showInventory))
 }
 
+function renderFeaturedProducts() {
+  featuredList.replaceChildren()
+
+  const productsById = new Map(
+    inventoryProducts.map(product => [String(product.id), product])
+  )
+
+  featuredProductIds.forEach((id, index) => {
+    const product = productsById.get(id)
+    if (!product) return
+
+    const row = document.createElement("div")
+    row.className = "featured-row"
+
+    const position = document.createElement("span")
+    position.textContent = `${index + 1}.`
+    row.appendChild(position)
+
+    const name = document.createElement("span")
+    name.className = "featured-row-name"
+    name.textContent = product.name
+    row.appendChild(name)
+
+    const upButton = document.createElement("button")
+    upButton.type = "button"
+    upButton.className = "secondary"
+    upButton.textContent = "Move Up"
+    upButton.disabled = index === 0
+    upButton.addEventListener("click", () => {
+      ;[featuredProductIds[index - 1], featuredProductIds[index]] =
+        [featuredProductIds[index], featuredProductIds[index - 1]]
+      renderFeaturedProducts()
+    })
+    row.appendChild(upButton)
+
+    const downButton = document.createElement("button")
+    downButton.type = "button"
+    downButton.className = "secondary"
+    downButton.textContent = "Move Down"
+    downButton.disabled = index === featuredProductIds.length - 1
+    downButton.addEventListener("click", () => {
+      ;[featuredProductIds[index], featuredProductIds[index + 1]] =
+        [featuredProductIds[index + 1], featuredProductIds[index]]
+      renderFeaturedProducts()
+    })
+    row.appendChild(downButton)
+
+    const removeButton = document.createElement("button")
+    removeButton.type = "button"
+    removeButton.className = "danger"
+    removeButton.textContent = "Remove"
+    removeButton.disabled = featuredProductIds.length === 1
+    removeButton.addEventListener("click", () => {
+      featuredProductIds.splice(index, 1)
+      renderFeaturedProducts()
+    })
+    row.appendChild(removeButton)
+
+    featuredList.appendChild(row)
+  })
+
+  featuredProductSelect.replaceChildren()
+
+  const availableProducts = inventoryProducts
+    .filter(product =>
+      product.active && !featuredProductIds.includes(String(product.id))
+    )
+    .sort((first, second) => first.name.localeCompare(second.name))
+
+  const placeholder = document.createElement("option")
+  placeholder.value = ""
+  placeholder.textContent = availableProducts.length
+    ? "Select a product"
+    : "No additional active products"
+  featuredProductSelect.appendChild(placeholder)
+
+  availableProducts.forEach(product => {
+    const option = document.createElement("option")
+    option.value = String(product.id)
+    option.textContent = product.name
+    featuredProductSelect.appendChild(option)
+  })
+
+  const atLimit = featuredProductIds.length >= 4
+  featuredProductSelect.disabled = atLimit || !availableProducts.length
+  addFeaturedButton.disabled = atLimit || !availableProducts.length
+  saveFeaturedButton.disabled = featuredProductIds.length < 1
+}
+
 function createInventoryCard(product) {
   const card = document.createElement("section")
   card.className = "inventory-card"
@@ -925,6 +1109,21 @@ function createInventoryCard(product) {
 
 function renderInventory(products) {
   inventoryContainer.replaceChildren()
+
+  inventoryProducts = products
+  featuredProductIds = products
+    .filter(product =>
+      product.active &&
+      product.featured_rank !== null &&
+      Number.isInteger(Number(product.featured_rank))
+    )
+    .sort((first, second) =>
+      Number(first.featured_rank) - Number(second.featured_rank)
+    )
+    .slice(0, 4)
+    .map(product => String(product.id))
+
+  renderFeaturedProducts()
 
   const activeProducts = products.filter(product => product.active)
 
@@ -1078,6 +1277,57 @@ async function setProductStatus(product, active, button) {
     showMessage(error.message, true)
     button.disabled = false
     button.textContent = originalText
+  }
+}
+
+async function saveFeaturedProducts() {
+  if (featuredProductIds.length < 1 || featuredProductIds.length > 4) {
+    showMessage("Choose between 1 and 4 featured products.", true)
+    return
+  }
+
+  const names = featuredProductIds.map(id =>
+    inventoryProducts.find(product => String(product.id) === id)?.name || id
+  )
+
+  if (!window.confirm(
+    "Update the homepage featured products to:\n\n" +
+    names.map((name, index) => `${index + 1}. ${name}`).join("\n")
+  )) return
+
+  const originalText = saveFeaturedButton.textContent
+  saveFeaturedButton.disabled = true
+  saveFeaturedButton.textContent = "Saving..."
+
+  try {
+    const response = await adminFetch("/api/inventory", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "set-featured-products",
+        ids: featuredProductIds
+      })
+    })
+    const data = await response.json()
+
+    if (response.status === 401) {
+      setDashboardVisible(false)
+      loginError.textContent =
+        "Your admin session expired. Please sign in again."
+      return
+    }
+
+    if (!response.ok) {
+      throw new Error(data.error || "Unable to save featured products.")
+    }
+
+    await loadInventory()
+    showMessage("Homepage featured products updated.")
+  } catch (error) {
+    showMessage(error.message, true)
+  } finally {
+    saveFeaturedButton.disabled = false
+    saveFeaturedButton.textContent = originalText
   }
 }
 
@@ -1314,6 +1564,19 @@ inventoryTab.addEventListener("click", async () => {
 newProductButton.addEventListener("click", () => {
   openProductForm()
 })
+
+addFeaturedButton.addEventListener("click", () => {
+  const id = featuredProductSelect.value
+
+  if (!id || featuredProductIds.includes(id) || featuredProductIds.length >= 4) {
+    return
+  }
+
+  featuredProductIds.push(id)
+  renderFeaturedProducts()
+})
+
+saveFeaturedButton.addEventListener("click", saveFeaturedProducts)
 
 document
   .getElementById("cancel-product-button")
