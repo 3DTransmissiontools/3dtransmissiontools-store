@@ -94,15 +94,8 @@ for (const [index, product] of products.entries()) {
   `;
 }
 
-const activeIds = products.map(product => String(product.id));
-await sql`
-  UPDATE products
-  SET active = FALSE, updated_at = NOW()
-  WHERE NOT EXISTS (
-    SELECT 1
-    FROM jsonb_array_elements_text(${JSON.stringify(activeIds)}::jsonb) AS id_list(id)
-    WHERE id_list.id = products.id
-  )
-`;
+console.log(
+  `Seeded metadata for ${products.length} products. ` +
+  "Products created in the admin dashboard were preserved."
+);
 
-console.log(`Seeded metadata for ${products.length} products.`);
