@@ -16,6 +16,7 @@ import {
   parseRestockRequest
 } from "../lib/admin-inventory.js";
 import {
+  getAllowedSiteOrigins,
   getConfiguredSiteUrl,
   isAllowedMediaUrl,
   isValidProductId,
@@ -76,6 +77,45 @@ test("same-origin validation ignores forwarding and Host headers", () => {
   assert.equal(
     validateSameOrigin({
       headers: { origin: "https://attacker.example" }
+    }),
+    false
+  );
+});
+
+test("same-origin validation accepts trusted Vercel preview URLs", () => {
+  process.env.NODE_ENV = "production";
+  process.env.SITE_URL = "https://preview.example.com";
+  process.env.VERCEL_ENV = "preview";
+  process.env.VERCEL_URL = "store-random.vercel.app";
+  process.env.VERCEL_BRANCH_URL = "store-git-feature-team.vercel.app";
+
+  assert.deepEqual(
+    [...getAllowedSiteOrigins()].sort(),
+    [
+      "https://preview.example.com",
+      "https://store-git-feature-team.vercel.app",
+      "https://store-random.vercel.app"
+    ]
+  );
+
+  assert.equal(
+    validateSameOrigin({
+      headers: { origin: "https://store-random.vercel.app" }
+    }),
+    true
+  );
+
+  assert.equal(
+    validateSameOrigin({
+      headers: { origin: "https://store-git-feature-team.vercel.app" }
+    }),
+    true
+  );
+
+  process.env.VERCEL_ENV = "production";
+  assert.equal(
+    validateSameOrigin({
+      headers: { origin: "https://store-random.vercel.app" }
     }),
     false
   );
