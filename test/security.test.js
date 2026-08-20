@@ -335,20 +335,31 @@ test("catalog source satisfies the server-side product schema", () => {
   }
 });
 
-test("homepage links safely to the eBay store with a local logo", () => {
-  const homepage = fs.readFileSync(
-    new URL("../public/index.html", import.meta.url),
-    "utf8"
-  );
+test("all customer pages link safely to the eBay store with a local logo", () => {
+  const customerPages = [
+    "index.html",
+    "shop.html",
+    "cart.html",
+    "success.html",
+    "cancel.html"
+  ];
   const logo = fs.readFileSync(
     new URL("../public/ebay-logo.png", import.meta.url)
   );
 
-  assert.match(homepage, /https:\/\/www\.ebay\.com\/usr\/3dtransmissiontools/);
-  assert.match(homepage, /class="ebay-store-link"/);
-  assert.match(homepage, /src="\/ebay-logo\.png"/);
-  assert.match(homepage, /target="_blank"/);
-  assert.match(homepage, /rel="noopener noreferrer"/);
+  for (const page of customerPages) {
+    const html = fs.readFileSync(
+      new URL(`../public/${page}`, import.meta.url),
+      "utf8"
+    );
+
+    assert.match(html, /https:\/\/www\.ebay\.com\/usr\/3dtransmissiontools/);
+    assert.match(html, /class="ebay-store-link"/);
+    assert.match(html, /src="\/ebay-logo\.png"/);
+    assert.match(html, /target="_blank"/);
+    assert.match(html, /rel="noopener noreferrer"/);
+  }
+
   assert.equal(logo.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
 });
 
