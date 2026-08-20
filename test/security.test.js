@@ -13,7 +13,11 @@ import {
 } from "../lib/inventory.js";
 import {
   addRestock,
-  parseRestockRequest
+  createProduct,
+  parseProductRequest,
+  parseRestockRequest,
+  setProductActive,
+  updateProduct
 } from "../lib/admin-inventory.js";
 import {
   getAllowedSiteOrigins,
@@ -252,6 +256,67 @@ test("admin restocks only accept safe positive quantities", async () => {
   assert.match(queries[0].query, /release_expired_inventory_reservations/);
   assert.match(queries[1].query, /stock_available = stock_available \+ \?/);
   assert.deepEqual(queries[1].values, [12, "21"]);
+});
+
+test("admin product changes enforce the catalog schema", async () => {
+  const validProduct = {
+    id: "new-tool-24",
+    name: "New Transmission Tool",
+    price: 49.95,
+    stock: 7,
+    weight_oz: 12.5,
+    category: "10L",
+    description: "A useful service tool.",
+    images: ["https://i.ebayimg.com/images/example.webp"],
+    video: ""
+  };
+
+  assert.deepEqual(parseProductRequest(validProduct), {
+    id: "new-tool-24",
+    name: "New Transmission Tool",
+    unitAmount: 4995,
+    stock: 7,
+    weightOz: 12.5,
+    category: "10L",
+    description: "A useful service tool.",
+    images: ["https://i.ebayimg.com/images/example.webp"],
+    video: null
+  });
+
+  for (const product of [
+    { ...validProduct, id: "<script>" },
+    { ...validProduct, price: 0 },
+    { ...validProduct, price: 1.001 },
+    { ...validProduct, stock: -1 },
+    { ...validProduct, weight_oz: 0 },
+    { ...validProduct, images: [] },
+    { ...validProduct, images: ["https://attacker.example/image.jpg"] },
+    { ...validProduct, video: "https://attacker.example/video.mp4" }
+  ]) {
+    assert.equal(typeof parseProductRequest(product).error, "string");
+  }
+
+  const queries = [];
+  const sql = async (strings, ...values) => {
+    const query = strings.join("?").replace(/\s+/g, " ").trim();
+    queries.push({ query, values });
+    return [{ id: "new-tool-24", name: "New Transmission Tool" }];
+  };
+
+  await createProduct(validProduct, sql);
+  await updateProduct(validProduct, sql);
+  await setProductActive("new-tool-24", false, sql);
+
+  assert.match(queries[0].query, /^INSERT INTO products/);
+  assert.ok(queries[0].values.includes(4995));
+  assert.ok(queries[0].values.includes(7));
+  assert.match(queries[1].query, /^UPDATE products SET name/);
+  assert.doesNotMatch(
+    queries[1].query,
+    /stock_available\s*=/
+  );
+  assert.match(queries[2].query, /SET active = \?/);
+  assert.deepEqual(queries[2].values, [false, "new-tool-24"]);
 });
 
 test("catalog source satisfies the server-side product schema", () => {
