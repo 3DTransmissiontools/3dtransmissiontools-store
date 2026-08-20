@@ -370,6 +370,18 @@ test("all customer pages link safely to the eBay store with a local logo", () =>
   assert.equal(logo.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
 });
 
+test("eBay navigation label remains readable on the white button", () => {
+  const styles = fs.readFileSync(
+    new URL("../public/styles.css", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(
+    styles,
+    /\.nav-inner a\.ebay-store-link\s*\{[^}]*color:\s*#111;/s
+  );
+});
+
 test("Vercel security header configuration parses", () => {
   const config = JSON.parse(
     fs.readFileSync(new URL("../vercel.json", import.meta.url), "utf8")

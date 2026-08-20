@@ -89,6 +89,10 @@ background:#f1f1f1;
 text-decoration:none;
 }
 
+.nav-inner a.ebay-store-link{
+color:#111;
+}
+
 .actions a.ebay-store-link,
 .checkout-actions a.ebay-store-link{
 padding:5px 10px;
