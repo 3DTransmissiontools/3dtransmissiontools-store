@@ -1,9 +1,14 @@
 import { authorizeAdminRequest } from "../lib/admin-auth.js";
 import {
   addRestock,
+  createProduct,
   listAdminInventory,
-  parseRestockRequest
+  parseProductRequest,
+  parseRestockRequest,
+  setProductActive,
+  updateProduct
 } from "../lib/admin-inventory.js";
+import { isValidProductId } from "../lib/site-security.js";
 import { enforceRateLimit } from "../lib/rate-limit.js";
 
 export default async function handler(req, res) {
@@ -43,6 +48,57 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "POST") {
+      if (req.body?.action === "create-product") {
+        const input = parseProductRequest(req.body.product);
+
+        if (input.error) {
+          return res.status(400).json({ error: input.error });
+        }
+
+        const product = await createProduct(req.body.product);
+
+        if (!product) {
+          return res.status(409).json({
+            error: "That product ID already exists. Choose a different ID."
+          });
+        }
+
+        return res.status(201).json({ success: true, product });
+      }
+
+      if (req.body?.action === "update-product") {
+        const input = parseProductRequest(req.body.product);
+
+        if (input.error) {
+          return res.status(400).json({ error: input.error });
+        }
+
+        const product = await updateProduct(req.body.product);
+
+        if (!product) {
+          return res.status(404).json({ error: "Product not found." });
+        }
+
+        return res.status(200).json({ success: true, product });
+      }
+
+      if (req.body?.action === "set-product-active") {
+        const id = typeof req.body.id === "string" ? req.body.id.trim() : "";
+        const active = req.body.active;
+
+        if (!isValidProductId(id) || typeof active !== "boolean") {
+          return res.status(400).json({ error: "Invalid product status." });
+        }
+
+        const product = await setProductActive(id, active);
+
+        if (!product) {
+          return res.status(404).json({ error: "Product not found." });
+        }
+
+        return res.status(200).json({ success: true, product });
+      }
+
       const input = parseRestockRequest(req.body);
 
       if (input.error) {
