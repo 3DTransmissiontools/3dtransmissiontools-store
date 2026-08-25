@@ -549,6 +549,7 @@ test("all customer pages provide a Contact link", () => {
 
   assert.match(contactPage, /fetch\("\/api\/contact"/);
   assert.match(contactPage, /contact-website/);
+  assert.match(contactPage, /value="New tool suggestion">New tool suggestion/);
   assert.match(adminPage, /id="messages-tab"/);
   assert.match(adminPage, /loadContactMessages/);
   assert.match(migration, /CREATE TABLE IF NOT EXISTS contact_messages/);
@@ -578,4 +579,3 @@ test("Vercel security header configuration parses", () => {
   assert.equal(headers["X-Content-Type-Options"], "nosniff");
   assert.equal(headers["X-Frame-Options"], "DENY");
 });
-
