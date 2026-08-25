@@ -22,6 +22,13 @@ import {
   updateProduct
 } from "../lib/admin-inventory.js";
 import {
+  createContactMessage,
+  isValidContactMessageId,
+  listContactMessages,
+  markContactMessageRead,
+  parseContactMessage
+} from "../lib/contact-messages.js";
+import {
   getAllowedSiteOrigins,
   getConfiguredSiteUrl,
   isAllowedMediaUrl,
@@ -365,6 +372,81 @@ test("admin product changes enforce the catalog schema", async () => {
   assert.deepEqual(queries[2].values, [false, false, "new-tool-24"]);
 });
 
+test("contact messages are validated and stored without client HTML", async () => {
+  const validMessage = {
+    name: "Jane Customer",
+    email: "JANE@example.com",
+    subject: "Product question",
+    order_reference: "ORDER-123",
+    message: "Will this tool work with my transmission?",
+    website: ""
+  };
+
+  assert.deepEqual(parseContactMessage(validMessage), {
+    name: "Jane Customer",
+    email: "jane@example.com",
+    subject: "Product question",
+    orderReference: "ORDER-123",
+    message: "Will this tool work with my transmission?"
+  });
+
+  for (const message of [
+    { ...validMessage, name: "" },
+    { ...validMessage, email: "not-an-email" },
+    { ...validMessage, subject: "" },
+    { ...validMessage, message: "short" }
+  ]) {
+    assert.equal(typeof parseContactMessage(message).error, "string");
+  }
+
+  assert.deepEqual(
+    parseContactMessage({ ...validMessage, website: "spam.example" }),
+    { spam: true }
+  );
+
+  const messageId = "00000000-0000-4000-8000-000000000123";
+  assert.equal(isValidContactMessageId(messageId), true);
+  assert.equal(isValidContactMessageId("<script>"), false);
+
+  const queries = [];
+  const sql = async (strings, ...values) => {
+    const query = strings.join("?").replace(/\s+/g, " ").trim();
+    queries.push({ query, values });
+
+    if (query.startsWith("INSERT INTO contact_messages")) {
+      return [{ id: messageId }];
+    }
+
+    if (query.startsWith("SELECT id,")) {
+      return [{ id: messageId, status: "new" }];
+    }
+
+    if (query.startsWith("UPDATE contact_messages")) {
+      return [{ id: messageId, status: "read" }];
+    }
+
+    return [];
+  };
+
+  assert.deepEqual(await createContactMessage(validMessage, sql), {
+    id: messageId
+  });
+  assert.deepEqual(await listContactMessages(sql), [
+    { id: messageId, status: "new" }
+  ]);
+  assert.deepEqual(await markContactMessageRead(messageId, sql), {
+    id: messageId,
+    status: "read"
+  });
+
+  assert.match(
+    queries.find(entry => entry.query.startsWith("INSERT INTO contact_messages"))
+      .query,
+    /RETURNING id, created_at/
+  );
+  assert.ok(queries.some(entry => entry.query.startsWith("CREATE TABLE")));
+});
+
 test("catalog source satisfies the server-side product schema", () => {
   const products = JSON.parse(
     fs.readFileSync(new URL("../public/products.json", import.meta.url), "utf8")
@@ -403,7 +485,8 @@ test("all customer pages link safely to the eBay store with a local logo", () =>
     "shop.html",
     "cart.html",
     "success.html",
-    "cancel.html"
+    "cancel.html",
+    "contact.html"
   ];
   const logo = fs.readFileSync(
     new URL("../public/ebay-logo.png", import.meta.url)
@@ -430,6 +513,45 @@ test("all customer pages link safely to the eBay store with a local logo", () =>
   }
 
   assert.equal(logo.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+});
+
+test("all customer pages provide a Contact link", () => {
+  const customerPages = [
+    "index.html",
+    "shop.html",
+    "cart.html",
+    "success.html",
+    "cancel.html",
+    "contact.html"
+  ];
+
+  for (const page of customerPages) {
+    const html = fs.readFileSync(
+      new URL(`../public/${page}`, import.meta.url),
+      "utf8"
+    );
+
+    assert.match(html, /href="\/contact\.html"/);
+  }
+
+  const contactPage = fs.readFileSync(
+    new URL("../public/contact.html", import.meta.url),
+    "utf8"
+  );
+  const adminPage = fs.readFileSync(
+    new URL("../public/admin-orders.html", import.meta.url),
+    "utf8"
+  );
+  const migration = fs.readFileSync(
+    new URL("../db/003_contact_messages.sql", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(contactPage, /fetch\("\/api\/contact"/);
+  assert.match(contactPage, /contact-website/);
+  assert.match(adminPage, /id="messages-tab"/);
+  assert.match(adminPage, /loadContactMessages/);
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS contact_messages/);
 });
 
 test("eBay navigation label remains readable on the white button", () => {

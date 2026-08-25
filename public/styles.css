@@ -174,6 +174,116 @@ margin:auto;
 padding:30px;
 }
 
+.contact-page{
+max-width:900px;
+margin:0 auto;
+padding:42px 24px 56px;
+}
+
+.contact-intro{
+text-align:center;
+margin-bottom:26px;
+}
+
+.contact-intro h1{
+font-size:38px;
+margin:4px 0 12px;
+}
+
+.contact-intro p{
+max-width:680px;
+margin:0 auto;
+color:#555;
+line-height:1.6;
+}
+
+.contact-eyebrow{
+font-size:13px;
+font-weight:bold;
+letter-spacing:1.2px;
+text-transform:uppercase;
+color:#111 !important;
+}
+
+.contact-card{
+background:#fff;
+border:1px solid #ddd;
+border-radius:12px;
+padding:28px;
+box-shadow:0 4px 18px rgba(0,0,0,.07);
+}
+
+.contact-card h2{
+margin:0 0 8px;
+font-size:27px;
+}
+
+.contact-note{
+margin:0 0 24px;
+color:#666;
+line-height:1.5;
+}
+
+.contact-form-grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:18px;
+}
+
+.contact-form-grid label{
+font-weight:bold;
+}
+
+.contact-form-grid input,
+.contact-form-grid select,
+.contact-form-grid textarea{
+display:block;
+width:100%;
+margin-top:7px;
+padding:12px;
+border:1px solid #bbb;
+border-radius:6px;
+background:#fff;
+color:#111;
+font:inherit;
+box-sizing:border-box;
+}
+
+.contact-form-grid textarea{
+resize:vertical;
+min-height:150px;
+}
+
+.contact-full-width{
+grid-column:1 / -1;
+}
+
+.contact-honeypot{
+position:absolute;
+left:-10000px;
+width:1px;
+height:1px;
+overflow:hidden;
+}
+
+#contact-submit{
+margin-top:20px;
+padding:12px 20px;
+font-size:16px;
+}
+
+.contact-status{
+min-height:24px;
+margin-top:14px;
+font-weight:bold;
+color:#155724;
+line-height:1.4;
+}
+
+.contact-status.error{
+color:#a40000;
+}
+
 .page-wrap{
 padding:30px;
 }
@@ -872,6 +982,26 @@ width:64px;
 
 .page-wrap{
 padding:20px;
+}
+
+.contact-page{
+padding:28px 16px 42px;
+}
+
+.contact-intro h1{
+font-size:31px;
+}
+
+.contact-card{
+padding:20px;
+}
+
+.contact-form-grid{
+grid-template-columns:1fr;
+}
+
+.contact-full-width{
+grid-column:auto;
 }
 
 .item{

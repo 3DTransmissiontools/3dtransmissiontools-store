@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta
+  name="description"
+  content="Contact 3D Transmission Tools about products, orders, or shipping."
+>
+<title>Contact - 3D Transmission Tools</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="banner">
+    <img src="/banner.png" alt="3D Transmission Tools">
+  </div>
+  <nav class="sticky-nav" aria-label="Main navigation">
+    <div class="nav-inner">
+      <a href="/">Home</a>
+      <a href="/shop.html">Shop</a>
+      <a href="/contact.html" aria-current="page">Contact</a>
+      <a href="/cart.html">Cart (<span id="cart-count">0</span>)</a>
+      <a class="ebay-store-link"
+         href="https://www.ebay.com/usr/3dtransmissiontools"
+         target="_blank"
+         rel="noopener noreferrer"
+         aria-label="Visit the 3D Transmission Tools eBay Store">
+        <img src="/ebay-logo.png" alt="" width="72" height="31">
+        <span>Store</span>
+      </a>
+    </div>
+  </nav>
+</header>
+
+<main class="contact-page">
+  <section class="contact-intro">
+    <p class="contact-eyebrow">Customer support</p>
+    <h1>How can we help?</h1>
+    <p>
+      Send us a message about a product, an existing order, shipping, or
+      anything else related to 3D Transmission Tools.
+    </p>
+  </section>
+
+  <section class="contact-card" aria-labelledby="contact-form-title">
+    <h2 id="contact-form-title">Send a message</h2>
+    <p class="contact-note">
+      Your message will be stored privately and can only be viewed from the
+      secure Store Admin dashboard.
+    </p>
+
+    <form id="contact-form">
+      <div class="contact-form-grid">
+        <label>
+          Your name
+          <input
+            id="contact-name"
+            name="name"
+            maxlength="100"
+            autocomplete="name"
+            required
+          >
+        </label>
+
+        <label>
+          Email address
+          <input
+            id="contact-email"
+            name="email"
+            type="email"
+            maxlength="254"
+            autocomplete="email"
+            required
+          >
+        </label>
+
+        <label>
+          Subject
+          <select id="contact-subject" name="subject" required>
+            <option value="">Choose a subject</option>
+            <option value="Product question">Product question</option>
+            <option value="Order question">Order question</option>
+            <option value="Shipping question">Shipping question</option>
+            <option value="Returns question">Returns question</option>
+            <option value="Other">Other</option>
+          </select>
+        </label>
+
+        <label>
+          Order number (optional)
+          <input
+            id="contact-order-reference"
+            name="order_reference"
+            maxlength="80"
+            autocomplete="off"
+          >
+        </label>
+
+        <label class="contact-full-width">
+          Message
+          <textarea
+            id="contact-message"
+            name="message"
+            minlength="10"
+            maxlength="3000"
+            rows="7"
+            required
+          ></textarea>
+        </label>
+      </div>
+
+      <div class="contact-honeypot" aria-hidden="true">
+        <label>
+          Website
+          <input
+            id="contact-website"
+            name="website"
+            tabindex="-1"
+            autocomplete="off"
+          >
+        </label>
+      </div>
+
+      <button id="contact-submit" type="submit">Send Message</button>
+      <div id="contact-status" class="contact-status" role="status"></div>
+    </form>
+  </section>
+</main>
+
+<footer>© 2026 3D Transmission Tools</footer>
+
+<script src="/cart.js"></script>
+<script>
+const contactForm = document.getElementById("contact-form")
+const contactSubmit = document.getElementById("contact-submit")
+const contactStatus = document.getElementById("contact-status")
+
+function showContactStatus(text, isError = false) {
+  contactStatus.textContent = text
+  contactStatus.classList.toggle("error", isError)
+  contactStatus.focus?.()
+}
+
+contactForm.addEventListener("submit", async event => {
+  event.preventDefault()
+
+  if (!contactForm.reportValidity()) return
+
+  contactSubmit.disabled = true
+  contactSubmit.textContent = "Sending..."
+  showContactStatus("")
+
+  const payload = {
+    name: document.getElementById("contact-name").value,
+    email: document.getElementById("contact-email").value,
+    subject: document.getElementById("contact-subject").value,
+    order_reference:
+      document.getElementById("contact-order-reference").value,
+    message: document.getElementById("contact-message").value,
+    website: document.getElementById("contact-website").value
+  }
+
+  try {
+    const response = await fetch("/api/contact", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.error || "Unable to send your message.")
+    }
+
+    contactForm.reset()
+    showContactStatus(
+      "Your message was sent. We will reply to the email address you provided."
+    )
+  } catch (error) {
+    showContactStatus(error.message, true)
+  } finally {
+    contactSubmit.disabled = false
+    contactSubmit.textContent = "Send Message"
+  }
+})
+</script>
+</body>
+</html>
+
