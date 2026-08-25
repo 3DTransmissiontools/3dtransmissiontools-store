@@ -184,6 +184,64 @@ button:disabled {
   border: 1px dashed #777;
 }
 
+.contact-message-list {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.contact-message-card {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.05);
+  border-left: 5px solid #777;
+}
+
+.contact-message-card.new {
+  border-left-color: #111;
+}
+
+.contact-message-card h3 {
+  margin: 0 0 8px;
+}
+
+.contact-message-meta {
+  display: flex;
+  gap: 8px 16px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  color: #555;
+}
+
+.contact-message-meta a {
+  color: #111;
+  font-weight: bold;
+}
+
+.contact-message-body {
+  white-space: pre-wrap;
+  line-height: 1.55;
+  padding: 14px;
+  border-radius: 7px;
+  background: #f7f7f7;
+}
+
+.contact-message-status {
+  display: inline-block;
+  margin-bottom: 10px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: #eee;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.contact-message-card.new .contact-message-status {
+  background: #fff1c7;
+  color: #684f00;
+}
+
 .product-status {
   display: inline-block;
   margin: 8px 0;
@@ -359,7 +417,7 @@ button:disabled {
   <div class="header">
     <div>
       <h1>Store Admin</h1>
-      <div class="muted">Manage orders and inventory</div>
+      <div class="muted">Manage orders, inventory, and customer messages</div>
     </div>
 
     <div>
@@ -398,6 +456,15 @@ button:disabled {
       aria-selected="false"
     >
       Inventory
+    </button>
+
+    <button
+      id="messages-tab"
+      type="button"
+      aria-controls="messages-panel"
+      aria-selected="false"
+    >
+      Messages
     </button>
   </nav>
 
@@ -546,6 +613,16 @@ button:disabled {
     <div id="inventory-count" class="muted"></div>
     <div id="inventory" class="inventory-grid"></div>
   </section>
+
+  <section id="messages-panel" class="hidden">
+    <h2>Customer Messages</h2>
+    <p class="muted">
+      Messages submitted through the Contact page appear here. Use the
+      customer email address to reply from your normal email account.
+    </p>
+    <div id="contact-message-count" class="muted"></div>
+    <div id="contact-messages" class="contact-message-list"></div>
+  </section>
 </div>
 
 <script>
@@ -579,11 +656,23 @@ const ordersPanel =
 const inventoryPanel =
   document.getElementById("inventory-panel")
 
+const messagesPanel =
+  document.getElementById("messages-panel")
+
 const ordersTab =
   document.getElementById("orders-tab")
 
 const inventoryTab =
   document.getElementById("inventory-tab")
+
+const messagesTab =
+  document.getElementById("messages-tab")
+
+const contactMessagesContainer =
+  document.getElementById("contact-messages")
+
+const contactMessageCount =
+  document.getElementById("contact-message-count")
 
 const newProductButton =
   document.getElementById("new-product-button")
@@ -894,15 +983,113 @@ function renderOrders(orders) {
 }
 
 function setActiveSection(section) {
-  activeSection = section === "inventory" ? "inventory" : "orders"
+  activeSection = ["orders", "inventory", "messages"].includes(section)
+    ? section
+    : "orders"
   const showInventory = activeSection === "inventory"
+  const showMessages = activeSection === "messages"
+  const showOrders = activeSection === "orders"
 
-  ordersPanel.classList.toggle("hidden", showInventory)
+  ordersPanel.classList.toggle("hidden", !showOrders)
   inventoryPanel.classList.toggle("hidden", !showInventory)
-  ordersTab.classList.toggle("active", !showInventory)
+  messagesPanel.classList.toggle("hidden", !showMessages)
+  ordersTab.classList.toggle("active", showOrders)
   inventoryTab.classList.toggle("active", showInventory)
-  ordersTab.setAttribute("aria-selected", String(!showInventory))
+  messagesTab.classList.toggle("active", showMessages)
+  ordersTab.setAttribute("aria-selected", String(showOrders))
   inventoryTab.setAttribute("aria-selected", String(showInventory))
+  messagesTab.setAttribute("aria-selected", String(showMessages))
+}
+
+function formatContactDate(value) {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime())
+    ? "Date unavailable"
+    : date.toLocaleString()
+}
+
+function createContactMessageCard(contactMessage) {
+  const card = document.createElement("article")
+  const isNew = contactMessage.status === "new"
+  card.className = "contact-message-card"
+  card.classList.toggle("new", isNew)
+
+  const status = document.createElement("div")
+  status.className = "contact-message-status"
+  status.textContent = isNew ? "New" : "Read"
+  card.appendChild(status)
+
+  const subject = document.createElement("h3")
+  subject.textContent = contactMessage.subject || "Customer message"
+  card.appendChild(subject)
+
+  const meta = document.createElement("div")
+  meta.className = "contact-message-meta"
+
+  const customer = document.createElement("span")
+  customer.textContent = contactMessage.name || "Customer"
+  meta.appendChild(customer)
+
+  const email = document.createElement("a")
+  email.href = `mailto:${contactMessage.email}`
+  email.textContent = contactMessage.email || "Email unavailable"
+  meta.appendChild(email)
+
+  const date = document.createElement("span")
+  date.textContent = formatContactDate(contactMessage.created_at)
+  meta.appendChild(date)
+
+  card.appendChild(meta)
+
+  if (contactMessage.order_reference) {
+    const orderReference = document.createElement("p")
+    orderReference.className = "muted"
+    orderReference.textContent =
+      `Order number: ${contactMessage.order_reference}`
+    card.appendChild(orderReference)
+  }
+
+  const body = document.createElement("div")
+  body.className = "contact-message-body"
+  body.textContent = contactMessage.message || ""
+  card.appendChild(body)
+
+  if (isNew) {
+    const markReadButton = document.createElement("button")
+    markReadButton.type = "button"
+    markReadButton.className = "secondary"
+    markReadButton.textContent = "Mark as Read"
+    markReadButton.addEventListener("click", () => {
+      markContactMessageRead(contactMessage.id, markReadButton)
+    })
+    card.appendChild(markReadButton)
+  }
+
+  return card
+}
+
+function renderContactMessages(messages) {
+  contactMessagesContainer.replaceChildren()
+  const unreadCount = messages.filter(message => message.status === "new").length
+
+  contactMessageCount.textContent =
+    `${messages.length} message${messages.length === 1 ? "" : "s"}` +
+    `${unreadCount ? ` — ${unreadCount} new` : ""}`
+  messagesTab.textContent = unreadCount
+    ? `Messages (${unreadCount})`
+    : "Messages"
+
+  if (!messages.length) {
+    const empty = document.createElement("p")
+    empty.className = "muted"
+    empty.textContent = "No customer messages have been received yet."
+    contactMessagesContainer.appendChild(empty)
+    return
+  }
+
+  messages.forEach(message => {
+    contactMessagesContainer.appendChild(createContactMessageCard(message))
+  })
 }
 
 function renderFeaturedProducts() {
@@ -1392,6 +1579,58 @@ async function loadInventory() {
   }
 }
 
+async function loadContactMessages() {
+  hideMessage()
+  showMessage("Loading customer messages...")
+
+  try {
+    const response = await adminFetch("/api/contact")
+    const data = await response.json()
+
+    if (response.status === 401) {
+      setDashboardVisible(false)
+      loginError.textContent =
+        "Your admin session expired. Please sign in again."
+      return
+    }
+
+    if (!response.ok) {
+      throw new Error(data.error || "Unable to load customer messages.")
+    }
+
+    hideMessage()
+    renderContactMessages(Array.isArray(data) ? data : [])
+  } catch (error) {
+    showMessage(error.message, true)
+  }
+}
+
+async function markContactMessageRead(id, button) {
+  const originalText = button.textContent
+  button.disabled = true
+  button.textContent = "Saving..."
+
+  try {
+    const response = await adminFetch("/api/contact", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "mark-read", id })
+    })
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.error || "Unable to update the message.")
+    }
+
+    await loadContactMessages()
+    showMessage("Message marked as read.")
+  } catch (error) {
+    showMessage(error.message, true)
+    button.disabled = false
+    button.textContent = originalText
+  }
+}
+
 async function addStock(product, quantity, button) {
   const originalText = button.textContent
   button.disabled = true
@@ -1439,6 +1678,11 @@ async function addStock(product, quantity, button) {
 async function loadActiveSection() {
   if (activeSection === "inventory") {
     await loadInventory()
+    return
+  }
+
+  if (activeSection === "messages") {
+    await loadContactMessages()
     return
   }
 
@@ -1559,6 +1803,11 @@ ordersTab.addEventListener("click", async () => {
 inventoryTab.addEventListener("click", async () => {
   setActiveSection("inventory")
   await loadInventory()
+})
+
+messagesTab.addEventListener("click", async () => {
+  setActiveSection("messages")
+  await loadContactMessages()
 })
 
 newProductButton.addEventListener("click", () => {
