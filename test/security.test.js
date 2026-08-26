@@ -14,6 +14,7 @@ import {
 import {
   addRestock,
   createProduct,
+  deleteProduct,
   parseFeaturedProductsRequest,
   parseProductRequest,
   parseRestockRequest,
@@ -377,6 +378,53 @@ test("admin product changes enforce the catalog schema", async () => {
   assert.deepEqual(queries[2].values, [false, false, "new-tool-24"]);
 });
 
+test("inventory deletion preserves products with checkout history", async () => {
+  const unusedProductSql = async (strings, ...values) => {
+    const query = strings.join("?").replace(/\s+/g, " ").trim();
+
+    if (query.startsWith("SELECT product.id")) {
+      return [{
+        id: "unused-tool",
+        name: "Unused Tool",
+        active: false,
+        has_history: false
+      }];
+    }
+
+    if (query.startsWith("DELETE FROM products")) {
+      assert.deepEqual(values, ["unused-tool"]);
+      return [{ id: "unused-tool", name: "Unused Tool" }];
+    }
+
+    return [];
+  };
+
+  assert.deepEqual(await deleteProduct("unused-tool", unusedProductSql), {
+    status: "deleted",
+    product: { id: "unused-tool", name: "Unused Tool" }
+  });
+
+  let attemptedDelete = false;
+  const usedProductSql = async strings => {
+    const query = strings.join("?").replace(/\s+/g, " ").trim();
+
+    if (query.startsWith("SELECT product.id")) {
+      return [{
+        id: "sold-tool",
+        name: "Sold Tool",
+        active: false,
+        has_history: true
+      }];
+    }
+
+    if (query.startsWith("DELETE FROM products")) attemptedDelete = true;
+    return [];
+  };
+
+  assert.equal((await deleteProduct("sold-tool", usedProductSql)).status, "in-use");
+  assert.equal(attemptedDelete, false);
+});
+
 test("contact messages are validated and stored without client HTML", async () => {
   const validMessage = {
     name: "Jane Customer",
@@ -614,6 +662,8 @@ test("all customer pages provide a Contact link", () => {
   assert.match(adminPage, /loadContactMessages/);
   assert.match(adminPage, /action: "delete"/);
   assert.match(adminPage, /window\.confirm/);
+  assert.match(adminPage, /action: "delete-product"/);
+  assert.match(adminPage, /Delete Product/);
   assert.match(migration, /CREATE TABLE IF NOT EXISTS contact_messages/);
 });
 
@@ -641,4 +691,5 @@ test("Vercel security header configuration parses", () => {
   assert.equal(headers["X-Content-Type-Options"], "nosniff");
   assert.equal(headers["X-Frame-Options"], "DENY");
 });
+
 

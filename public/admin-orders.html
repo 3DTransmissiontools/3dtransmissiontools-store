@@ -1309,6 +1309,26 @@ function createInventoryCard(product) {
     await setProductStatus(product, !product.active, statusButton)
   })
   actions.appendChild(statusButton)
+
+  const deleteButton = document.createElement("button")
+  deleteButton.type = "button"
+  deleteButton.className = "danger"
+  deleteButton.textContent = "Delete Product"
+  deleteButton.disabled = product.active
+  deleteButton.title = product.active
+    ? "Deactivate this product before permanently deleting it."
+    : "Permanently delete this unused product."
+  deleteButton.addEventListener("click", async () => {
+    const confirmed = window.confirm(
+      `Permanently delete ${product.name}? This cannot be undone. ` +
+      "Products with checkout or order history cannot be deleted."
+    )
+
+    if (!confirmed) return
+    await deleteInventoryProduct(product, deleteButton)
+  })
+  actions.appendChild(deleteButton)
+
   card.appendChild(actions)
 
   return card
@@ -1480,6 +1500,42 @@ async function setProductStatus(product, active, button) {
 
     await loadInventory()
     showMessage(active ? "Product reactivated." : "Product deactivated.")
+  } catch (error) {
+    showMessage(error.message, true)
+    button.disabled = false
+    button.textContent = originalText
+  }
+}
+
+async function deleteInventoryProduct(product, button) {
+  const originalText = button.textContent
+  button.disabled = true
+  button.textContent = "Deleting..."
+
+  try {
+    const response = await adminFetch("/api/inventory", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "delete-product",
+        id: product.id
+      })
+    })
+    const data = await response.json()
+
+    if (response.status === 401) {
+      setDashboardVisible(false)
+      loginError.textContent =
+        "Your admin session expired. Please sign in again."
+      return
+    }
+
+    if (!response.ok) {
+      throw new Error(data.error || "Unable to delete the product.")
+    }
+
+    await loadInventory()
+    showMessage("Product permanently deleted.")
   } catch (error) {
     showMessage(error.message, true)
     button.disabled = false
