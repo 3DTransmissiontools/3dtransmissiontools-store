@@ -227,6 +227,12 @@ button:disabled {
   background: #f7f7f7;
 }
 
+.contact-message-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .contact-message-status {
   display: inline-block;
   margin-bottom: 10px;
@@ -1054,6 +1060,9 @@ function createContactMessageCard(contactMessage) {
   body.textContent = contactMessage.message || ""
   card.appendChild(body)
 
+  const actions = document.createElement("div")
+  actions.className = "contact-message-actions"
+
   if (isNew) {
     const markReadButton = document.createElement("button")
     markReadButton.type = "button"
@@ -1062,8 +1071,19 @@ function createContactMessageCard(contactMessage) {
     markReadButton.addEventListener("click", () => {
       markContactMessageRead(contactMessage.id, markReadButton)
     })
-    card.appendChild(markReadButton)
+    actions.appendChild(markReadButton)
   }
+
+
+  const deleteButton = document.createElement("button")
+  deleteButton.type = "button"
+  deleteButton.className = "danger"
+  deleteButton.textContent = "Delete"
+  deleteButton.addEventListener("click", () => {
+    deleteContactMessage(contactMessage, deleteButton)
+  })
+  actions.appendChild(deleteButton)
+  card.appendChild(actions)
 
   return card
 }
@@ -1624,6 +1644,39 @@ async function markContactMessageRead(id, button) {
 
     await loadContactMessages()
     showMessage("Message marked as read.")
+  } catch (error) {
+    showMessage(error.message, true)
+    button.disabled = false
+    button.textContent = originalText
+  }
+}
+
+async function deleteContactMessage(contactMessage, button) {
+  const customerName = contactMessage.name || "this customer"
+  const confirmed = window.confirm(
+    `Permanently delete the message from ${customerName}? This cannot be undone.`
+  )
+
+  if (!confirmed) return
+
+  const originalText = button.textContent
+  button.disabled = true
+  button.textContent = "Deleting..."
+
+  try {
+    const response = await adminFetch("/api/contact", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "delete", id: contactMessage.id })
+    })
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.error || "Unable to delete the message.")
+    }
+
+    await loadContactMessages()
+    showMessage("Customer message deleted.")
   } catch (error) {
     showMessage(error.message, true)
     button.disabled = false
