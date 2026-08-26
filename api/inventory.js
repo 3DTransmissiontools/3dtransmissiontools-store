@@ -2,6 +2,7 @@ import { authorizeAdminRequest } from "../lib/admin-auth.js";
 import {
   addRestock,
   createProduct,
+  deleteProduct,
   listAdminInventory,
   parseFeaturedProductsRequest,
   parseProductRequest,
@@ -112,6 +113,43 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, product });
       }
 
+      if (req.body?.action === "delete-product") {
+        const id = typeof req.body.id === "string" ? req.body.id.trim() : "";
+
+        if (!isValidProductId(id)) {
+          return res.status(400).json({ error: "Invalid product ID." });
+        }
+
+        const result = await deleteProduct(id);
+
+        if (result.status === "not-found") {
+          return res.status(404).json({ error: "Product not found." });
+        }
+
+        if (result.status === "active") {
+          return res.status(409).json({
+            error: "Deactivate this product before permanently deleting it."
+          });
+        }
+
+        if (result.status === "in-use") {
+          return res.status(409).json({
+            error: "This product has checkout or order history and cannot be permanently deleted. Leave it inactive instead."
+          });
+        }
+
+        if (result.status !== "deleted") {
+          return res.status(409).json({
+            error: "The product changed before it could be deleted. Refresh and try again."
+          });
+        }
+
+        return res.status(200).json({
+          success: true,
+          product: result.product
+        });
+      }
+
       const input = parseRestockRequest(req.body);
 
       if (input.error) {
@@ -141,4 +179,5 @@ export default async function handler(req, res) {
     });
   }
 }
+
 
