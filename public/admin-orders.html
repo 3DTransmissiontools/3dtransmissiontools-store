@@ -1310,22 +1310,24 @@ function createInventoryCard(product) {
   })
   actions.appendChild(statusButton)
 
-  if (!product.active) {
-    const deleteButton = document.createElement("button")
-    deleteButton.type = "button"
-    deleteButton.className = "danger"
-    deleteButton.textContent = "Delete Product"
-    deleteButton.addEventListener("click", async () => {
-      const confirmed = window.confirm(
-        `Permanently delete ${product.name}? This cannot be undone. ` +
-        "Products with checkout or order history cannot be deleted."
-      )
+  const deleteButton = document.createElement("button")
+  deleteButton.type = "button"
+  deleteButton.className = "danger"
+  deleteButton.textContent = "Delete Product"
+  deleteButton.disabled = product.active
+  deleteButton.title = product.active
+    ? "Deactivate this product before permanently deleting it."
+    : "Permanently delete this unused product."
+  deleteButton.addEventListener("click", async () => {
+    const confirmed = window.confirm(
+      `Permanently delete ${product.name}? This cannot be undone. ` +
+      "Products with checkout or order history cannot be deleted."
+    )
 
-      if (!confirmed) return
-      await deleteInventoryProduct(product, deleteButton)
-    })
-    actions.appendChild(deleteButton)
-  }
+    if (!confirmed) return
+    await deleteInventoryProduct(product, deleteButton)
+  })
+  actions.appendChild(deleteButton)
 
   card.appendChild(actions)
 
@@ -1974,5 +1976,4 @@ restoreSession()
 
 </body>
 </html>
-
 
