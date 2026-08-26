@@ -23,6 +23,7 @@ import {
 } from "../lib/admin-inventory.js";
 import {
   createContactMessage,
+  deleteContactMessage,
   isValidContactMessageId,
   listContactMessages,
   markContactMessageRead,
@@ -429,6 +430,10 @@ test("contact messages are validated and stored without client HTML", async () =
       return [{ id: messageId, status: "read" }];
     }
 
+    if (query.startsWith("DELETE FROM contact_messages")) {
+      return [{ id: messageId }];
+    }
+
     return [];
   };
 
@@ -442,6 +447,10 @@ test("contact messages are validated and stored without client HTML", async () =
     id: messageId,
     status: "read"
   });
+  assert.deepEqual(await deleteContactMessage(messageId, sql), {
+    id: messageId
+  });
+  assert.equal(await deleteContactMessage("invalid", sql), null);
 
   assert.match(
     queries.find(entry => entry.query.startsWith("INSERT INTO contact_messages"))
@@ -603,6 +612,8 @@ test("all customer pages provide a Contact link", () => {
   assert.match(contactPage, /value="New tool suggestion">New tool suggestion/);
   assert.match(adminPage, /id="messages-tab"/);
   assert.match(adminPage, /loadContactMessages/);
+  assert.match(adminPage, /action: "delete"/);
+  assert.match(adminPage, /window\.confirm/);
   assert.match(migration, /CREATE TABLE IF NOT EXISTS contact_messages/);
 });
 
@@ -630,3 +641,4 @@ test("Vercel security header configuration parses", () => {
   assert.equal(headers["X-Content-Type-Options"], "nosniff");
   assert.equal(headers["X-Frame-Options"], "DENY");
 });
+
