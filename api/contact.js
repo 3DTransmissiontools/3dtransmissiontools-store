@@ -1,4 +1,5 @@
 import { authorizeAdminRequest } from "../lib/admin-auth.js";
+import { sendContactAlert } from "../lib/contact-alerts.js";
 import {
   createContactMessage,
   isValidContactMessageId,
@@ -78,7 +79,20 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: parsed.error });
     }
 
-    await createContactMessage(req.body);
+    const savedMessage = await createContactMessage(req.body);
+
+    try {
+      await sendContactAlert({
+        id: savedMessage.id,
+        name: parsed.name,
+        email: parsed.email,
+        subject: parsed.subject,
+        orderReference: parsed.orderReference,
+        message: parsed.message
+      });
+    } catch (error) {
+      console.error("Contact email alert failed:", error);
+    }
 
     return res.status(201).json({ success: true });
   } catch (error) {
@@ -88,4 +102,3 @@ export default async function handler(req, res) {
     });
   }
 }
-

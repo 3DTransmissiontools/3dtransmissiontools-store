@@ -29,6 +29,10 @@ import {
   parseContactMessage
 } from "../lib/contact-messages.js";
 import {
+  buildContactAlert,
+  sendContactAlert
+} from "../lib/contact-alerts.js";
+import {
   getAllowedSiteOrigins,
   getConfiguredSiteUrl,
   isAllowedMediaUrl,
@@ -445,6 +449,53 @@ test("contact messages are validated and stored without client HTML", async () =
     /RETURNING id, created_at/
   );
   assert.ok(queries.some(entry => entry.query.startsWith("CREATE TABLE")));
+});
+
+test("contact email alerts are private, escaped, and safely configurable", async () => {
+  const message = {
+    id: "00000000-0000-4000-8000-000000000123",
+    name: "Jane <Customer>",
+    email: "jane@example.com",
+    subject: "New tool suggestion",
+    orderReference: "",
+    message: "Please build a <strong>new tool</strong>."
+  };
+
+  const alert = buildContactAlert(message);
+  assert.match(alert.subject, /New tool suggestion/);
+  assert.match(alert.html, /Jane &lt;Customer&gt;/);
+  assert.match(alert.html, /&lt;strong&gt;new tool&lt;\/strong&gt;/);
+  assert.doesNotMatch(alert.html, /<strong>new tool<\/strong>/);
+
+  assert.deepEqual(
+    await sendContactAlert(message, { env: {}, fetchImpl: null }),
+    { sent: false, reason: "not-configured" }
+  );
+
+  let request;
+  const result = await sendContactAlert(message, {
+    env: {
+      RESEND_API_KEY: "re_test_key",
+      CONTACT_ALERT_EMAIL: "owner@example.com",
+      CONTACT_FROM_EMAIL: "3D Transmission Tools <alerts@example.com>"
+    },
+    fetchImpl: async (url, options) => {
+      request = { url, options };
+      return { ok: true, status: 200, text: async () => "" };
+    }
+  });
+
+  assert.deepEqual(result, { sent: true });
+  assert.equal(request.url, "https://api.resend.com/emails");
+  assert.equal(
+    request.options.headers["Idempotency-Key"],
+    `contact-message-${message.id}`
+  );
+
+  const payload = JSON.parse(request.options.body);
+  assert.deepEqual(payload.to, ["owner@example.com"]);
+  assert.equal(payload.reply_to, "jane@example.com");
+  assert.doesNotMatch(payload.html, /<strong>new tool<\/strong>/);
 });
 
 test("catalog source satisfies the server-side product schema", () => {
