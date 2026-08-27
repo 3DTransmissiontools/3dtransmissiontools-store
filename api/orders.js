@@ -129,6 +129,9 @@ async function formatOrder(stripe, session) {
     tracking:
       session.metadata?.tracking || "",
 
+    package_weight_oz:
+      Number(session.metadata?.package_weight_oz || 0),
+
     items: lineItems.data.map(item => ({
       name: item.description || "Item",
 
@@ -380,3 +383,4 @@ export default async function handler(req, res) {
     });
   }
 }
+

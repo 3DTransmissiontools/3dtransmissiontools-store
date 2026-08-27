@@ -483,6 +483,14 @@ button:disabled {
   <section id="orders-panel">
     <h2>Orders</h2>
     <div id="order-count" class="muted"></div>
+    <button
+      id="pirate-ship-export-button"
+      class="secondary"
+      type="button"
+      disabled
+    >
+      Download Unshipped Orders for Pirate Ship
+    </button>
     <div id="orders"></div>
   </section>
 
@@ -737,10 +745,14 @@ const productVideoInput =
 const messageElement =
   document.getElementById("message")
 
+const pirateShipExportButton =
+  document.getElementById("pirate-ship-export-button")
+
 let activeSection = "orders"
 let editingProductId = null
 let inventoryProducts = []
 let featuredProductIds = []
+let currentOrders = []
 
 function showMessage(text, isError = false) {
   messageElement.textContent = text
@@ -965,8 +977,108 @@ function createOrderCard(order) {
   return card
 }
 
+function escapeCsvValue(value) {
+  let text = String(value ?? "")
+
+  if (/^[=+\-@\t\r]/.test(text)) {
+    text = "'" + text
+  }
+
+  return `"${text.replace(/"/g, '""')}"`
+}
+
+function buildPirateShipCsv(orders) {
+  const headers = [
+    "Full Name",
+    "Company",
+    "Address Line 1",
+    "Address Line 2",
+    "City",
+    "State",
+    "Zip",
+    "Country",
+    "Email",
+    "Item Total Weight (Ounces)",
+    "Order Items",
+    "Order Date",
+    "Order Value",
+    "Order ID",
+    "Order Status",
+    "Requested Shipping Service",
+    "Customer Shipping Cost"
+  ]
+
+  const rows = orders.map(order => {
+    const address = order.shipping_address || {}
+    const weight = Number(order.package_weight_oz)
+    const items = (order.items || [])
+      .map(item => `${item.name} x${item.quantity}`)
+      .join("; ")
+
+    return [
+      order.customer_name,
+      "",
+      address.line1,
+      address.line2,
+      address.city,
+      address.state,
+      address.postal_code,
+      address.country || "US",
+      order.customer_email,
+      Number.isFinite(weight) && weight > 0 ? weight : "",
+      items,
+      order.date,
+      Number(order.amount_total || 0).toFixed(2),
+      order.id,
+      "Paid - Unshipped",
+      order.shipping_method,
+      Number(order.shipping_amount || 0).toFixed(2)
+    ]
+  })
+
+  return [headers, ...rows]
+    .map(row => row.map(escapeCsvValue).join(","))
+    .join("\r\n")
+}
+
+function downloadPirateShipOrders() {
+  const unshippedOrders = currentOrders.filter(order => !order.shipped)
+
+  if (!unshippedOrders.length) {
+    showMessage("There are no unshipped orders to download.", true)
+    return
+  }
+
+  const csv = "\uFEFF" + buildPirateShipCsv(unshippedOrders)
+  const file = new Blob([csv], { type: "text/csv;charset=utf-8" })
+  const url = URL.createObjectURL(file)
+  const link = document.createElement("a")
+  const date = new Date().toISOString().slice(0, 10)
+
+  link.href = url
+  link.download = `pirate-ship-orders-${date}.csv`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+
+  showMessage(
+    `${unshippedOrders.length} unshipped order` +
+    `${unshippedOrders.length === 1 ? "" : "s"} downloaded for Pirate Ship.`
+  )
+}
+
 function renderOrders(orders) {
   ordersContainer.replaceChildren()
+
+  currentOrders = orders
+  const unshippedCount = orders.filter(order => !order.shipped).length
+
+  pirateShipExportButton.disabled = unshippedCount === 0
+  pirateShipExportButton.textContent = unshippedCount
+    ? `Download ${unshippedCount} Unshipped Order` +
+      `${unshippedCount === 1 ? "" : "s"} for Pirate Ship`
+    : "No Unshipped Orders for Pirate Ship"
 
   document.getElementById("order-count").textContent =
     `${orders.length} order` +
@@ -1903,6 +2015,11 @@ passwordInput.addEventListener(
 document
   .getElementById("refresh-button")
   .addEventListener("click", loadActiveSection)
+
+pirateShipExportButton.addEventListener(
+  "click",
+  downloadPirateShipOrders
+)
 
 ordersTab.addEventListener("click", async () => {
   setActiveSection("orders")
