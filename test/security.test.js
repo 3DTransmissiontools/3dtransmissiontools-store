@@ -667,6 +667,24 @@ test("all customer pages provide a Contact link", () => {
   assert.match(migration, /CREATE TABLE IF NOT EXISTS contact_messages/);
 });
 
+test("Store Admin exports only unshipped orders for Pirate Ship", () => {
+  const adminPage = fs.readFileSync(
+    new URL("../public/admin-orders.html", import.meta.url),
+    "utf8"
+  );
+  const ordersApi = fs.readFileSync(
+    new URL("../api/orders.js", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(adminPage, /id="pirate-ship-export-button"/);
+  assert.match(adminPage, /currentOrders\.filter\(order => !order\.shipped\)/);
+  assert.match(adminPage, /Item Total Weight \(Ounces\)/);
+  assert.match(adminPage, /text\/csv;charset=utf-8/);
+  assert.match(adminPage, /function escapeCsvValue/);
+  assert.match(ordersApi, /package_weight_oz/);
+});
+
 test("eBay navigation label remains readable on the white button", () => {
   const styles = fs.readFileSync(
     new URL("../public/styles.css", import.meta.url),
@@ -691,5 +709,4 @@ test("Vercel security header configuration parses", () => {
   assert.equal(headers["X-Content-Type-Options"], "nosniff");
   assert.equal(headers["X-Frame-Options"], "DENY");
 });
-
 
