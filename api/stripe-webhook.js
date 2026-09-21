@@ -3,6 +3,7 @@ import {
   completeInventoryReservation,
   releaseInventory
 } from "../lib/inventory.js";
+import { sendOrderAlert } from "../lib/order-alerts.js";
 
 const STORE_ID = "3dtransmissiontools-store";
 const UUID_PATTERN =
@@ -43,6 +44,49 @@ function isPaid(session) {
       session.payment_status === "no_payment_required"
     )
   );
+}
+
+function getShippingAddress(session) {
+  return (
+    session.collected_information?.shipping_details?.address ||
+    session.shipping_details?.address ||
+    session.customer_details?.address ||
+    {}
+  );
+}
+
+function getShippingName(session) {
+  return (
+    session.collected_information?.shipping_details?.name ||
+    session.shipping_details?.name ||
+    session.customer_details?.name ||
+    ""
+  );
+}
+
+async function sendPaidOrderAlert(stripe, session) {
+  const lineItems = await stripe.checkout.sessions.listLineItems(
+    session.id,
+    { limit: 100 }
+  );
+  const result = await sendOrderAlert({
+    id: session.id,
+    customerName: getShippingName(session),
+    customerEmail:
+      session.customer_details?.email || session.customer_email || "",
+    amountTotal: Number(session.amount_total || 0),
+    currency: session.currency || "usd",
+    shippingAddress: getShippingAddress(session),
+    items: lineItems.data.map(item => ({
+      name: item.description || "Item",
+      quantity: Number(item.quantity || 1),
+      amountTotal: Number(item.amount_total || 0)
+    }))
+  });
+
+  if (!result.sent) {
+    throw new Error("New-order email alerts are not configured.");
+  }
 }
 
 export default async function handler(req, res) {
@@ -122,6 +166,7 @@ export default async function handler(req, res) {
             event.id,
             event.type
           );
+          await sendPaidOrderAlert(stripe, session);
         } else if (
           event.type === "checkout.session.expired" ||
           event.type === "checkout.session.async_payment_failed"
@@ -144,3 +189,4 @@ export default async function handler(req, res) {
     });
   }
 }
+
