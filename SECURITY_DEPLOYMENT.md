@@ -36,9 +36,11 @@ Set these independently for Production and Preview:
 - `ADMIN_PASSWORD`: random password of at least 20 characters.
 - `ADMIN_SESSION_SECRET`: independently generated random value of at least 32 characters.
 - `RATE_LIMIT_SECRET`: a different random value of at least 32 characters.
-- `RESEND_API_KEY`: server-side Resend key used only for contact alerts.
-- `CONTACT_ALERT_EMAIL`: the private address that receives contact alerts.
+- `RESEND_API_KEY`: server-side Resend key used for private store alerts.
+- `CONTACT_ALERT_EMAIL`: the private address that receives contact and new-order alerts.
 - `CONTACT_FROM_EMAIL`: a sender on a domain verified in Resend.
+- `ORDER_ALERT_EMAIL`: optional separate recipient for new-order alerts.
+- `ORDER_FROM_EMAIL`: optional separate verified sender for new-order alerts.
 
 Never copy production Stripe keys or the production database URL into Preview.
 
@@ -46,6 +48,10 @@ Contact messages are saved before an alert is attempted. If Resend is
 temporarily unavailable, the customer still receives a successful response and
 the message remains available in Store Admin. Use a Resend API key restricted
 to sending email, and never expose it in customer-facing JavaScript.
+
+Paid Stripe Checkout events send a private new-order alert after inventory is
+completed. The Stripe Checkout Session ID is used as the Resend idempotency key
+so webhook retries do not send duplicate alerts.
 
 ## 3. Configure Stripe
 
@@ -79,3 +85,4 @@ Store the endpoint signing secret as `STRIPE_WEBHOOK_SECRET`.
 Do not roll back only the application code after the database becomes the
 inventory authority. If a rollback is required, disable checkout first so the
 static catalog and database cannot accept conflicting orders.
+
