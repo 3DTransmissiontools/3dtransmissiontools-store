@@ -35,6 +35,10 @@ import {
   sendContactAlert
 } from "../lib/contact-alerts.js";
 import {
+  buildOrderAlert,
+  sendOrderAlert
+} from "../lib/order-alerts.js";
+import {
   getAllowedSiteOrigins,
   getConfiguredSiteUrl,
   isAllowedMediaUrl,
@@ -553,6 +557,82 @@ test("contact email alerts are private, escaped, and safely configurable", async
   assert.deepEqual(payload.to, ["owner@example.com"]);
   assert.equal(payload.reply_to, "jane@example.com");
   assert.doesNotMatch(payload.html, /<strong>new tool<\/strong>/);
+});
+
+test("paid order alerts are escaped, private, and idempotent", async () => {
+  const order = {
+    id: "cs_test_order_123",
+    customerName: "Jane <Customer>\r\nBcc: attacker@example.com",
+    customerEmail: "jane@example.com",
+    amountTotal: 12999,
+    currency: "usd",
+    shippingAddress: {
+      line1: "123 Main <Street>",
+      line2: "Suite 4",
+      city: "Los Angeles",
+      state: "CA",
+      postal_code: "90001",
+      country: "US"
+    },
+    items: [{
+      name: "Transmission <Tool>",
+      quantity: 2,
+      amountTotal: 12999
+    }]
+  };
+
+  const alert = buildOrderAlert(order);
+  assert.match(alert.subject, /\$129\.99/);
+  assert.doesNotMatch(alert.subject, /[\r\n]/);
+  assert.match(alert.html, /Jane &lt;Customer&gt;/);
+  assert.match(alert.html, /Transmission &lt;Tool&gt;/);
+  assert.doesNotMatch(alert.html, /Transmission <Tool>/);
+
+  assert.deepEqual(
+    await sendOrderAlert(order, { env: {}, fetchImpl: null }),
+    { sent: false, reason: "not-configured" }
+  );
+
+  let request;
+  const result = await sendOrderAlert(order, {
+    env: {
+      RESEND_API_KEY: "re_test_key",
+      CONTACT_ALERT_EMAIL: "owner@example.com",
+      CONTACT_FROM_EMAIL: "3D Transmission Tools <alerts@example.com>"
+    },
+    fetchImpl: async (url, options) => {
+      request = { url, options };
+      return { ok: true, status: 200, text: async () => "" };
+    }
+  });
+
+  assert.deepEqual(result, { sent: true });
+  assert.equal(request.url, "https://api.resend.com/emails");
+  assert.equal(
+    request.options.headers["Idempotency-Key"],
+    `new-order-${order.id}`
+  );
+
+  const payload = JSON.parse(request.options.body);
+  assert.deepEqual(payload.to, ["owner@example.com"]);
+  assert.equal(payload.reply_to, "jane@example.com");
+  assert.match(payload.text, /123 Main <Street>/);
+  assert.doesNotMatch(payload.html, /123 Main <Street>/);
+});
+
+test("Stripe paid-order webhook sends an owner alert after inventory completion", () => {
+  const webhook = fs.readFileSync(
+    new URL("../api/stripe-webhook.js", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(webhook, /await completeInventoryReservation\(/);
+  assert.match(webhook, /await sendPaidOrderAlert\(stripe, session\)/);
+  assert.ok(
+    webhook.indexOf("await completeInventoryReservation(") <
+      webhook.indexOf("await sendPaidOrderAlert(stripe, session)")
+  );
+  assert.match(webhook, /checkout\.sessions\.listLineItems/);
 });
 
 test("catalog source satisfies the server-side product schema", () => {
