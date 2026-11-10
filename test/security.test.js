@@ -16,6 +16,15 @@ import {
   processPaidOrder,
   sendPaidOrderAlert
 } from "../api/stripe-webhook.js";
+import retryOrderAlertsHandler, {
+  retryDueOrderAlerts
+} from "../api/retry-order-alerts.js";
+import {
+  claimDueOrderAlerts,
+  claimOrderAlert,
+  markOrderAlertFailed,
+  markOrderAlertSent
+} from "../lib/order-alert-outbox.js";
 import {
   addRestock,
   createProduct,
@@ -627,6 +636,7 @@ test("paid order alerts are escaped, private, and idempotent", async () => {
 
 test("missing order-email configuration does not fail paid-order processing", async () => {
   const errors = [];
+  const failures = [];
   const session = {
     id: "cs_test_missing_email_config",
     amount_total: 4999,
@@ -647,10 +657,12 @@ test("missing order-email configuration does not fail paid-order processing", as
       env: {},
       fetchImpl: null
     }),
+    markFailed: async (...args) => failures.push(args),
     logger: { error: (...args) => errors.push(args) }
   });
 
   assert.deepEqual(result, { sent: false, reason: "not-configured" });
+  assert.deepEqual(failures, [[session.id, "not-configured"]]);
   assert.equal(errors.length, 1);
   assert.deepEqual(errors[0][1], {
     eventId: "evt_missing_email_config",
@@ -661,6 +673,7 @@ test("missing order-email configuration does not fail paid-order processing", as
 
 test("email-provider failures are logged without failing paid-order processing", async () => {
   const errors = [];
+  const failures = [];
   const session = { id: "cs_test_provider_failure" };
   const stripe = {
     checkout: {
@@ -675,10 +688,14 @@ test("email-provider failures are logged without failing paid-order processing",
     sendAlert: async () => {
       throw new Error("Resend unavailable");
     },
+    markFailed: async (...args) => failures.push(args),
     logger: { error: (...args) => errors.push(args) }
   });
 
   assert.deepEqual(result, { sent: false, reason: "delivery-failed" });
+  assert.equal(failures.length, 1);
+  assert.equal(failures[0][0], session.id);
+  assert.match(failures[0][1].message, /Resend unavailable/);
   assert.equal(errors.length, 1);
   assert.deepEqual(errors[0][1], {
     eventId: "evt_provider_failure",
@@ -717,6 +734,7 @@ test("inventory completion exposes the database duplicate-event result", async (
 
 test("repeated Stripe events do not repeat inventory or email processing", async () => {
   const processedEventIds = new Set();
+  let claimCount = 0;
   let notificationCount = 0;
   const event = {
     id: "evt_replayed",
@@ -744,7 +762,12 @@ test("repeated Stripe events do not repeat inventory or email processing", async
     notificationCount += 1;
     return { sent: true };
   };
-  const options = { completeReservation, notify };
+  const claimNotification = async sessionId => {
+    assert.equal(sessionId, session.id);
+    claimCount += 1;
+    return { stripe_session_id: sessionId };
+  };
+  const options = { completeReservation, claimNotification, notify };
 
   assert.equal(
     await processPaidOrder(
@@ -766,7 +789,142 @@ test("repeated Stripe events do not repeat inventory or email processing", async
     ),
     false
   );
+  assert.equal(claimCount, 1);
   assert.equal(notificationCount, 1);
+});
+
+test("order alert outbox claims work once and records retry outcomes", async () => {
+  const queries = [];
+  const returnedRows = [
+    [{ stripe_session_id: "cs_test_outbox", stripe_event_id: "evt_outbox" }],
+    [{ stripe_session_id: "cs_test_outbox", stripe_event_id: "evt_outbox" }],
+    [{ status: "sent", attempt_count: 1 }],
+    [{
+      status: "pending",
+      attempt_count: 2,
+      last_error: "Temporary failure"
+    }]
+  ];
+  const sql = async (strings, ...values) => {
+    queries.push({
+      query: strings.join("?").replace(/\s+/g, " ").trim(),
+      values
+    });
+    return returnedRows.shift();
+  };
+
+  assert.equal(
+    (await claimOrderAlert("cs_test_outbox", sql)).stripe_event_id,
+    "evt_outbox"
+  );
+  assert.equal((await claimDueOrderAlerts(100, sql)).length, 1);
+  assert.equal((await markOrderAlertSent("cs_test_outbox", sql)).status, "sent");
+  assert.equal(
+    (await markOrderAlertFailed(
+      "cs_test_outbox",
+      new Error("Temporary\nfailure"),
+      sql
+    )).status,
+    "pending"
+  );
+
+  assert.match(queries[0].query, /^UPDATE order_alert_outbox/);
+  assert.match(queries[1].query, /FOR UPDATE SKIP LOCKED/);
+  assert.ok(queries[1].values.includes(25));
+  assert.match(queries[2].query, /status = 'sent'/);
+  assert.ok(queries[3].values.includes("Temporary failure"));
+});
+
+test("scheduled retries deliver claimed alerts and retain retrieval failures", async () => {
+  const failures = [];
+  const notifications = [];
+  const alerts = [
+    {
+      stripe_session_id: "cs_test_retry_success",
+      stripe_event_id: "evt_retry_success"
+    },
+    {
+      stripe_session_id: "cs_test_retry_failure",
+      stripe_event_id: "evt_retry_failure"
+    }
+  ];
+  const stripe = {
+    checkout: {
+      sessions: {
+        retrieve: async sessionId => {
+          if (sessionId === "cs_test_retry_failure") {
+            throw new Error("Stripe temporarily unavailable");
+          }
+
+          return { id: sessionId };
+        }
+      }
+    }
+  };
+  const results = await retryDueOrderAlerts(stripe, {
+    claimDue: async limit => {
+      assert.equal(limit, 10);
+      return alerts;
+    },
+    notify: async (receivedStripe, session, options) => {
+      assert.equal(receivedStripe, stripe);
+      notifications.push({ session, options });
+      return { sent: true };
+    },
+    markFailed: async (...args) => failures.push(args),
+    logger: { error: () => {} }
+  });
+
+  assert.deepEqual(results, [
+    { stripeSessionId: "cs_test_retry_success", sent: true },
+    { stripeSessionId: "cs_test_retry_failure", sent: false }
+  ]);
+  assert.deepEqual(notifications, [{
+    session: { id: "cs_test_retry_success" },
+    options: { eventId: "evt_retry_success" }
+  }]);
+  assert.equal(failures.length, 1);
+  assert.equal(failures[0][0], "cs_test_retry_failure");
+});
+
+test("order alert retry endpoint requires the cron bearer secret", async () => {
+  process.env.CRON_SECRET = "c".repeat(32);
+  const response = {
+    statusCode: null,
+    body: null,
+    headers: {},
+    setHeader(name, value) {
+      this.headers[name] = value;
+    },
+    status(code) {
+      this.statusCode = code;
+      return this;
+    },
+    json(body) {
+      this.body = body;
+      return this;
+    }
+  };
+
+  await retryOrderAlertsHandler(
+    { method: "GET", headers: {} },
+    response
+  );
+
+  assert.equal(response.statusCode, 401);
+  assert.equal(response.body.code, "UNAUTHORIZED");
+});
+
+test("order alert migration creates the durable outbox atomically", () => {
+  const migration = fs.readFileSync(
+    new URL("../db/004_order_alert_outbox.sql", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS order_alert_outbox/);
+  assert.match(migration, /CREATE OR REPLACE FUNCTION complete_inventory_reservation/);
+  assert.match(migration, /INSERT INTO order_alert_outbox/);
+  assert.match(migration, /ON CONFLICT \(stripe_session_id\) DO NOTHING/);
 });
 
 test("catalog source satisfies the server-side product schema", () => {
@@ -922,5 +1080,9 @@ test("Vercel security header configuration parses", () => {
   assert.match(headers["Content-Security-Policy"], /frame-ancestors 'none'/);
   assert.equal(headers["X-Content-Type-Options"], "nosniff");
   assert.equal(headers["X-Frame-Options"], "DENY");
+  assert.deepEqual(config.crons, [{
+    path: "/api/retry-order-alerts",
+    schedule: "0 16 * * *"
+  }]);
 });
 

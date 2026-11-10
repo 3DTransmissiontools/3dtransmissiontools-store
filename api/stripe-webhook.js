@@ -4,6 +4,11 @@ import {
   releaseInventory
 } from "../lib/inventory.js";
 import { sendOrderAlert } from "../lib/order-alerts.js";
+import {
+  claimOrderAlert,
+  markOrderAlertFailed,
+  markOrderAlertSent
+} from "../lib/order-alert-outbox.js";
 
 const STORE_ID = "3dtransmissiontools-store";
 const UUID_PATTERN =
@@ -70,6 +75,8 @@ export async function sendPaidOrderAlert(
   {
     eventId = "",
     sendAlert = sendOrderAlert,
+    markFailed = markOrderAlertFailed,
+    markSent = markOrderAlertSent,
     logger = console
   } = {}
 ) {
@@ -99,6 +106,30 @@ export async function sendPaidOrderAlert(
         stripeSessionId: session.id,
         reason: result.reason || "unknown"
       });
+
+      try {
+        await markFailed(session.id, result.reason || "unknown");
+      } catch (recordError) {
+        logger.error("Paid order email retry could not be recorded.", {
+          eventId,
+          stripeSessionId: session.id,
+          error: recordError instanceof Error
+            ? recordError.message
+            : String(recordError)
+        });
+      }
+    } else {
+      try {
+        await markSent(session.id);
+      } catch (recordError) {
+        logger.error("Paid order email success could not be recorded.", {
+          eventId,
+          stripeSessionId: session.id,
+          error: recordError instanceof Error
+            ? recordError.message
+            : String(recordError)
+        });
+      }
     }
 
     return result;
@@ -108,6 +139,18 @@ export async function sendPaidOrderAlert(
       stripeSessionId: session.id,
       error: error instanceof Error ? error.message : String(error)
     });
+
+    try {
+      await markFailed(session.id, error);
+    } catch (recordError) {
+      logger.error("Paid order email retry could not be recorded.", {
+        eventId,
+        stripeSessionId: session.id,
+        error: recordError instanceof Error
+          ? recordError.message
+          : String(recordError)
+      });
+    }
 
     return { sent: false, reason: "delivery-failed" };
   }
@@ -120,7 +163,9 @@ export async function processPaidOrder(
   reservationId,
   {
     completeReservation = completeInventoryReservation,
-    notify = sendPaidOrderAlert
+    claimNotification = claimOrderAlert,
+    notify = sendPaidOrderAlert,
+    logger = console
   } = {}
 ) {
   const completed = await completeReservation(
@@ -131,6 +176,23 @@ export async function processPaidOrder(
   );
 
   if (!completed) return false;
+
+  let claimed;
+
+  try {
+    claimed = await claimNotification(session.id);
+  } catch (error) {
+    logger.error("Paid order email retry queue could not be claimed.", {
+      eventId: event.id,
+      stripeSessionId: session.id,
+      error: error instanceof Error ? error.message : String(error)
+    });
+
+    // Preserve the immediate alert attempt if the retry queue is unavailable.
+    claimed = true;
+  }
+
+  if (!claimed) return true;
 
   await notify(stripe, session, { eventId: event.id });
   return true;
