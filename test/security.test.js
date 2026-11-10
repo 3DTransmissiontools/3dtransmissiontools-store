@@ -8,9 +8,14 @@ import {
 } from "../lib/admin-auth.js";
 import { getUniqueCartItems } from "../api/create-checkout-session.js";
 import {
+  completeInventoryReservation,
   listProducts,
   reserveInventory
 } from "../lib/inventory.js";
+import {
+  processPaidOrder,
+  sendPaidOrderAlert
+} from "../api/stripe-webhook.js";
 import {
   addRestock,
   createProduct,
@@ -620,19 +625,148 @@ test("paid order alerts are escaped, private, and idempotent", async () => {
   assert.doesNotMatch(payload.html, /123 Main <Street>/);
 });
 
-test("Stripe paid-order webhook sends an owner alert after inventory completion", () => {
-  const webhook = fs.readFileSync(
-    new URL("../api/stripe-webhook.js", import.meta.url),
-    "utf8"
-  );
+test("missing order-email configuration does not fail paid-order processing", async () => {
+  const errors = [];
+  const session = {
+    id: "cs_test_missing_email_config",
+    amount_total: 4999,
+    currency: "usd",
+    customer_details: { email: "buyer@example.com" }
+  };
+  const stripe = {
+    checkout: {
+      sessions: {
+        listLineItems: async () => ({ data: [] })
+      }
+    }
+  };
 
-  assert.match(webhook, /await completeInventoryReservation\(/);
-  assert.match(webhook, /await sendPaidOrderAlert\(stripe, session\)/);
-  assert.ok(
-    webhook.indexOf("await completeInventoryReservation(") <
-      webhook.indexOf("await sendPaidOrderAlert(stripe, session)")
+  const result = await sendPaidOrderAlert(stripe, session, {
+    eventId: "evt_missing_email_config",
+    sendAlert: order => sendOrderAlert(order, {
+      env: {},
+      fetchImpl: null
+    }),
+    logger: { error: (...args) => errors.push(args) }
+  });
+
+  assert.deepEqual(result, { sent: false, reason: "not-configured" });
+  assert.equal(errors.length, 1);
+  assert.deepEqual(errors[0][1], {
+    eventId: "evt_missing_email_config",
+    stripeSessionId: session.id,
+    reason: "not-configured"
+  });
+});
+
+test("email-provider failures are logged without failing paid-order processing", async () => {
+  const errors = [];
+  const session = { id: "cs_test_provider_failure" };
+  const stripe = {
+    checkout: {
+      sessions: {
+        listLineItems: async () => ({ data: [] })
+      }
+    }
+  };
+
+  const result = await sendPaidOrderAlert(stripe, session, {
+    eventId: "evt_provider_failure",
+    sendAlert: async () => {
+      throw new Error("Resend unavailable");
+    },
+    logger: { error: (...args) => errors.push(args) }
+  });
+
+  assert.deepEqual(result, { sent: false, reason: "delivery-failed" });
+  assert.equal(errors.length, 1);
+  assert.deepEqual(errors[0][1], {
+    eventId: "evt_provider_failure",
+    stripeSessionId: session.id,
+    error: "Resend unavailable"
+  });
+});
+
+test("inventory completion exposes the database duplicate-event result", async () => {
+  const queries = [];
+  const sql = async (strings, ...values) => {
+    queries.push({
+      query: strings.join("?").replace(/\s+/g, " ").trim(),
+      values
+    });
+    return [{ completed: false }];
+  };
+
+  assert.equal(
+    await completeInventoryReservation(
+      "00000000-0000-4000-8000-000000000123",
+      "cs_test_duplicate",
+      "evt_duplicate",
+      "checkout.session.completed",
+      sql
+    ),
+    false
   );
-  assert.match(webhook, /checkout\.sessions\.listLineItems/);
+  assert.match(queries[0].query, /AS completed$/);
+  assert.deepEqual(queries[0].values.slice(1), [
+    "cs_test_duplicate",
+    "evt_duplicate",
+    "checkout.session.completed"
+  ]);
+});
+
+test("repeated Stripe events do not repeat inventory or email processing", async () => {
+  const processedEventIds = new Set();
+  let notificationCount = 0;
+  const event = {
+    id: "evt_replayed",
+    type: "checkout.session.completed"
+  };
+  const session = { id: "cs_test_replayed" };
+  const completeReservation = async (
+    reservationId,
+    sessionId,
+    eventId,
+    eventType
+  ) => {
+    assert.equal(reservationId, "00000000-0000-4000-8000-000000000123");
+    assert.equal(sessionId, session.id);
+    assert.equal(eventType, event.type);
+
+    if (processedEventIds.has(eventId)) return false;
+    processedEventIds.add(eventId);
+    return true;
+  };
+  const notify = async (receivedStripe, receivedSession, options) => {
+    assert.equal(receivedStripe, null);
+    assert.equal(receivedSession, session);
+    assert.deepEqual(options, { eventId: event.id });
+    notificationCount += 1;
+    return { sent: true };
+  };
+  const options = { completeReservation, notify };
+
+  assert.equal(
+    await processPaidOrder(
+      null,
+      session,
+      event,
+      "00000000-0000-4000-8000-000000000123",
+      options
+    ),
+    true
+  );
+  assert.equal(
+    await processPaidOrder(
+      null,
+      session,
+      event,
+      "00000000-0000-4000-8000-000000000123",
+      options
+    ),
+    false
+  );
+  assert.equal(notificationCount, 1);
 });
 
 test("catalog source satisfies the server-side product schema", () => {

@@ -64,29 +64,76 @@ function getShippingName(session) {
   );
 }
 
-async function sendPaidOrderAlert(stripe, session) {
-  const lineItems = await stripe.checkout.sessions.listLineItems(
-    session.id,
-    { limit: 100 }
-  );
-  const result = await sendOrderAlert({
-    id: session.id,
-    customerName: getShippingName(session),
-    customerEmail:
-      session.customer_details?.email || session.customer_email || "",
-    amountTotal: Number(session.amount_total || 0),
-    currency: session.currency || "usd",
-    shippingAddress: getShippingAddress(session),
-    items: lineItems.data.map(item => ({
-      name: item.description || "Item",
-      quantity: Number(item.quantity || 1),
-      amountTotal: Number(item.amount_total || 0)
-    }))
-  });
+export async function sendPaidOrderAlert(
+  stripe,
+  session,
+  {
+    eventId = "",
+    sendAlert = sendOrderAlert,
+    logger = console
+  } = {}
+) {
+  try {
+    const lineItems = await stripe.checkout.sessions.listLineItems(
+      session.id,
+      { limit: 100 }
+    );
+    const result = await sendAlert({
+      id: session.id,
+      customerName: getShippingName(session),
+      customerEmail:
+        session.customer_details?.email || session.customer_email || "",
+      amountTotal: Number(session.amount_total || 0),
+      currency: session.currency || "usd",
+      shippingAddress: getShippingAddress(session),
+      items: lineItems.data.map(item => ({
+        name: item.description || "Item",
+        quantity: Number(item.quantity || 1),
+        amountTotal: Number(item.amount_total || 0)
+      }))
+    });
 
-  if (!result.sent) {
-    throw new Error("New-order email alerts are not configured.");
+    if (!result.sent) {
+      logger.error("Paid order email alert was not sent.", {
+        eventId,
+        stripeSessionId: session.id,
+        reason: result.reason || "unknown"
+      });
+    }
+
+    return result;
+  } catch (error) {
+    logger.error("Paid order email alert failed.", {
+      eventId,
+      stripeSessionId: session.id,
+      error: error instanceof Error ? error.message : String(error)
+    });
+
+    return { sent: false, reason: "delivery-failed" };
   }
+}
+
+export async function processPaidOrder(
+  stripe,
+  session,
+  event,
+  reservationId,
+  {
+    completeReservation = completeInventoryReservation,
+    notify = sendPaidOrderAlert
+  } = {}
+) {
+  const completed = await completeReservation(
+    reservationId,
+    session.id,
+    event.id,
+    event.type
+  );
+
+  if (!completed) return false;
+
+  await notify(stripe, session, { eventId: event.id });
+  return true;
 }
 
 export default async function handler(req, res) {
@@ -160,13 +207,7 @@ export default async function handler(req, res) {
             event.type === "checkout.session.async_payment_succeeded") &&
           isPaid(session)
         ) {
-          await completeInventoryReservation(
-            reservationId,
-            session.id,
-            event.id,
-            event.type
-          );
-          await sendPaidOrderAlert(stripe, session);
+          await processPaidOrder(stripe, session, event, reservationId);
         } else if (
           event.type === "checkout.session.expired" ||
           event.type === "checkout.session.async_payment_failed"

@@ -50,8 +50,13 @@ the message remains available in Store Admin. Use a Resend API key restricted
 to sending email, and never expose it in customer-facing JavaScript.
 
 Paid Stripe Checkout events send a private new-order alert after inventory is
-completed. The Stripe Checkout Session ID is used as the Resend idempotency key
-so webhook retries do not send duplicate alerts.
+completed. Alert delivery is best effort: missing email configuration or a
+Resend failure is logged with the Stripe event and Checkout Session IDs, but
+does not change the successful webhook response. Exact event replays are
+ignored by the database-backed event guard before another alert is attempted.
+The Stripe Checkout Session ID is also used as the Resend idempotency key so
+separate paid-event types for the same Checkout Session do not send duplicate
+alerts.
 
 ## 3. Configure Stripe
 
