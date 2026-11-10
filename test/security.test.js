@@ -612,6 +612,7 @@ test("paid order alerts are escaped, private, and idempotent", async () => {
     env: {
       RESEND_API_KEY: "re_test_key",
       CONTACT_ALERT_EMAIL: "owner@example.com",
+      ORDER_ALERT_EMAIL: "owner@example.com, shipping@example.com, owner@example.com",
       CONTACT_FROM_EMAIL: "3D Transmission Tools <alerts@example.com>"
     },
     fetchImpl: async (url, options) => {
@@ -628,7 +629,7 @@ test("paid order alerts are escaped, private, and idempotent", async () => {
   );
 
   const payload = JSON.parse(request.options.body);
-  assert.deepEqual(payload.to, ["owner@example.com"]);
+  assert.deepEqual(payload.to, ["owner@example.com", "shipping@example.com"]);
   assert.equal(payload.reply_to, "jane@example.com");
   assert.match(payload.text, /123 Main <Street>/);
   assert.doesNotMatch(payload.html, /123 Main <Street>/);
