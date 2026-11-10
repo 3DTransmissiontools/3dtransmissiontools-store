@@ -1,5 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/retry-order-alerts",
+      "schedule": "0 16 * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
@@ -36,3 +42,4 @@
     }
   ]
 }
+
