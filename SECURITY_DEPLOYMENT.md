@@ -36,6 +36,7 @@ Set these independently for Production and Preview:
 - `ADMIN_PASSWORD`: random password of at least 20 characters.
 - `ADMIN_SESSION_SECRET`: independently generated random value of at least 32 characters.
 - `RATE_LIMIT_SECRET`: a different random value of at least 32 characters.
+- `CRON_SECRET`: another random value of at least 32 characters used only to authenticate scheduled retry jobs.
 - `RESEND_API_KEY`: server-side Resend key used for private store alerts.
 - `CONTACT_ALERT_EMAIL`: the private address that receives contact and new-order alerts.
 - `CONTACT_FROM_EMAIL`: a sender on a domain verified in Resend.
@@ -49,14 +50,16 @@ temporarily unavailable, the customer still receives a successful response and
 the message remains available in Store Admin. Use a Resend API key restricted
 to sending email, and never expose it in customer-facing JavaScript.
 
-Paid Stripe Checkout events send a private new-order alert after inventory is
-completed. Alert delivery is best effort: missing email configuration or a
-Resend failure is logged with the Stripe event and Checkout Session IDs, but
-does not change the successful webhook response. Exact event replays are
-ignored by the database-backed event guard before another alert is attempted.
-The Stripe Checkout Session ID is also used as the Resend idempotency key so
-separate paid-event types for the same Checkout Session do not send duplicate
-alerts.
+Paid Stripe Checkout events create a durable email-outbox entry in the same
+database transaction that completes inventory, then attempt the private
+new-order alert immediately. Missing email configuration or a Resend failure
+is logged with the Stripe event and Checkout Session IDs, but does not change
+the successful webhook response. A protected Vercel Cron Job retries due
+outbox entries daily and records the last error. After six unsuccessful
+attempts, the entry remains in the database with `failed` status for diagnosis.
+Exact event replays are ignored by the database-backed event guard. The Stripe
+Checkout Session ID is also used as the Resend idempotency key so a retry whose
+first response was lost does not send a duplicate alert.
 
 ## 3. Configure Stripe
 
@@ -81,6 +84,8 @@ Store the endpoint signing secret as `STRIPE_WEBHOOK_SECRET`.
 - Buy the last unit of a test product from two browsers; only one checkout may reserve it.
 - Expire a test Checkout Session and confirm stock is restored exactly once.
 - Replay a signed Stripe event and confirm stock does not change twice.
+- Confirm `/api/retry-order-alerts` rejects requests without the `CRON_SECRET` bearer token.
+- Simulate a Resend failure and confirm the outbox entry stays queued without changing the Stripe webhook response.
 - Confirm the admin password never appears in session/local storage or request headers.
 - Confirm a forged `Origin` or forwarding host cannot create a Checkout Session.
 - Confirm the success page removes `session_id` from the address bar.
