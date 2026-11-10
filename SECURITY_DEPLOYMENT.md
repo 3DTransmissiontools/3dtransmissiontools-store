@@ -40,7 +40,7 @@ Set these independently for Production and Preview:
 - `RESEND_API_KEY`: server-side Resend key used for private store alerts.
 - `CONTACT_ALERT_EMAIL`: the private address that receives contact and new-order alerts.
 - `CONTACT_FROM_EMAIL`: a sender on a domain verified in Resend.
-- `ORDER_ALERT_EMAIL`: optional separate recipient for new-order alerts.
+- `ORDER_ALERT_EMAIL`: optional comma-separated recipients for new-order alerts.
 - `ORDER_FROM_EMAIL`: optional separate verified sender for new-order alerts.
 
 Never copy production Stripe keys or the production database URL into Preview.
