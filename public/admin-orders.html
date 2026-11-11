@@ -491,6 +491,13 @@ button:disabled {
     >
       Download Unshipped Orders for Pirate Ship
     </button>
+    <button
+      id="test-order-email-button"
+      class="secondary"
+      type="button"
+    >
+      Send Test Order Email
+    </button>
     <div id="orders"></div>
   </section>
 
@@ -747,6 +754,9 @@ const messageElement =
 
 const pirateShipExportButton =
   document.getElementById("pirate-ship-export-button")
+
+const testOrderEmailButton =
+  document.getElementById("test-order-email-button")
 
 let activeSection = "orders"
 let editingProductId = null
@@ -1741,6 +1751,41 @@ async function loadOrders() {
   }
 }
 
+async function sendTestOrderEmail() {
+  hideMessage()
+  testOrderEmailButton.disabled = true
+  testOrderEmailButton.textContent = "Sending Test Email..."
+
+  try {
+    const response = await adminFetch("/api/admin-email-check", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: "{}"
+    })
+    const data = await response.json()
+
+    if (response.status === 401) {
+      setDashboardVisible(false)
+      loginError.textContent =
+        "Your admin session expired. Please sign in again."
+      return
+    }
+
+    if (!response.ok) {
+      throw new Error(data.error || "Unable to send the test order email.")
+    }
+
+    showMessage("Test order email sent to every configured recipient.")
+  } catch (error) {
+    showMessage(error.message, true)
+  } finally {
+    testOrderEmailButton.disabled = false
+    testOrderEmailButton.textContent = "Send Test Order Email"
+  }
+}
+
 async function loadInventory() {
   hideMessage()
   showMessage("Loading inventory...")
@@ -2019,6 +2064,11 @@ document
 pirateShipExportButton.addEventListener(
   "click",
   downloadPirateShipOrders
+)
+
+testOrderEmailButton.addEventListener(
+  "click",
+  sendTestOrderEmail
 )
 
 ordersTab.addEventListener("click", async () => {
