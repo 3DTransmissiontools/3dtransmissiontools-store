@@ -52,6 +52,7 @@ import {
   buildOrderAlert,
   sendOrderAlert
 } from "../lib/order-alerts.js";
+import { buildTestOrder } from "../api/admin-email-check.js";
 import {
   getAllowedSiteOrigins,
   getConfiguredSiteUrl,
@@ -635,6 +636,17 @@ test("paid order alerts are escaped, private, and idempotent", async () => {
   assert.doesNotMatch(payload.html, /123 Main <Street>/);
 });
 
+test("admin order-email tests are clearly labeled and create no order", () => {
+  const order = buildTestOrder(1234567890);
+  const alert = buildOrderAlert(order);
+
+  assert.equal(order.id, "test-order-alert-1234567890");
+  assert.equal(order.amountTotal, 0);
+  assert.match(alert.subject, /^\[TEST\]/);
+  assert.match(alert.text, /no-charge test/i);
+  assert.match(alert.html, /No order was placed/i);
+});
+
 test("missing order-email configuration does not fail paid-order processing", async () => {
   const errors = [];
   const failures = [];
@@ -1037,6 +1049,8 @@ test("all customer pages provide a Contact link", () => {
   assert.match(adminPage, /window\.confirm/);
   assert.match(adminPage, /action: "delete-product"/);
   assert.match(adminPage, /Delete Product/);
+  assert.match(adminPage, /Send Test Order Email/);
+  assert.match(adminPage, /\/api\/admin-email-check/);
   assert.match(migration, /CREATE TABLE IF NOT EXISTS contact_messages/);
 });
 
